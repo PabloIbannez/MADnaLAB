@@ -1,4 +1,3 @@
-
 import os
 import pathlib
 
@@ -9,7 +8,7 @@ BIN_path =  "/home/pablo/bin"
 
 MADnaLAB_path = pathlib.Path(__file__).parent.resolve()
 
-UAMMD_path = "/home/pablo/Desktop/UAMMD"
+UAMMD_path = "/home/pablo/UAMMD"
 UAMMD_struct_path = UAMMD_path+"/extensions/structured"
 
 TOP_path = UAMMD_struct_path+"/Tools/TopologyUtilities"

@@ -1,10 +1,10 @@
 ARCH=86
 CXX=g++
 
-UAMMD_ROOT=/home/pablo/Desktop/UAMMD
+UAMMD_ROOT=/home/pablo/UAMMD
 UAMMD_STRUCTURED_ROOT=$(UAMMD_ROOT)/extensions/structured/
 
-CUDA_ROOT=/usr/local/cuda
+CUDA_ROOT=/usr/local/cuda-11.3
 NVCC=$(CUDA_ROOT)/bin/nvcc
 
 #Uncomment to compile in double precision mode, single by default
