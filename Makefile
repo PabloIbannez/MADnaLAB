@@ -27,6 +27,6 @@ INCLUDE_FLAGS= -I$(CUDA_ROOT)/include -I$(UAMMD_ROOT)/src/ -I$(UAMMD_ROOT)/src/t
 LIBRARIES=
 
 madnalab:  
-	$(NVCC) --expt-relaxed-constexpr --expt-extended-lambda -std=c++17 -O3 $(OPTIONS) -ccbin="$(CXX)" -Xcompiler="$(CPU)" $(GENCODE_FLAGS) ./src/MADnaLAB.cu $(INCLUDE_FLAGS) $(LIBRARIES) -o MADnaLAB
-	mv MADnaLAB ./bin
+	$(NVCC) --expt-relaxed-constexpr --expt-extended-lambda -std=c++17 -O3 $(OPTIONS) -ccbin="$(CXX)" -Xcompiler="$(CPU)" $(GENCODE_FLAGS) ./src/uammdMADnaLAB.cu $(INCLUDE_FLAGS) $(LIBRARIES) -o uammdMADnaLAB
+	mv uammdMADnaLAB ./bin
 

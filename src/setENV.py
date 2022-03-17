@@ -13,7 +13,7 @@ HOME_path = os.path.expanduser('~')
 UAMMD_struct_path = UAMMD_path+"/extensions/structured"
 TOP_path = UAMMD_struct_path+"/Tools/TopologyUtilities"
 
-MADnaLAB_path = str(pathlib.Path(__file__).parent.resolve())
+MADnaLAB_path = str(pathlib.Path(__file__).parent.parent.resolve())
 
 #######################################################
 
@@ -21,13 +21,15 @@ export = []
 
 export.append("export PYTHONPATH=\"${PYTHONPATH}:")
 
-export[0]+=str(MADnaLAB_path)+":"
+export[0]+=str(MADnaLAB_path)+"/src:"
 export[0]+=TOP_path
 export[0]+="\""
 
 #####
-
 export.append("export UAMMDPATH="+UAMMD_path)
+#####
+export.append("export MADNALABPATH="+MADnaLAB_path)
+#####
 
 for ex in export:
     append=True
