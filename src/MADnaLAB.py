@@ -20,7 +20,7 @@ cutoffVerletDiff = 5.0
 
 SIMULATION_OPTIONS = {
 
-"boxSize":[1000.0,1000.0,1000.0],
+"boxSize":[10000.0,10000.0,10000.0],
 
 "T":300.0,
 
@@ -370,70 +370,84 @@ def genMADna(cfgFile):
     
     ##########################Add simulation mod#########################
     
-    print("[INFO] Adding simulation modifications ...")
-    for mod in conf['SIMULATION']['modifications']:
-        if mod == "pulling":
-            for pullingType in conf['SIMULATION']['modifications']['pulling']:
-                print("[INFO] Adding",pullingType)
-                flag = mod+(pullingType[0].capitalize()+pullingType[1::])+"Active"
-                SIMULATION_OPTIONS[flag]=""
-                options = conf['SIMULATION']['modifications']['pulling'][pullingType]
-                for opt in options:
-                    SIMULATION_OPTIONS[opt]=options[opt]
-        if mod == "constraints":
-            for constraintType in conf['SIMULATION']['modifications']['constraints']:
-                print("[INFO] Adding",constraintType)
-                flag = "constraint"+(constraintType[0].capitalize()+constraintType[1::])+"Active"
-                SIMULATION_OPTIONS[flag]=""
-                #list of constraints of type constraintType
-                constInfo = conf['SIMULATION']['modifications']['constraints'][constraintType]
-                
-                if type(constInfo) != tuple:
-                    constInfo=(constInfo,)
-
-                ks = (constInfo[0]).keys()
-                val = {}
-                for k in ks:
-                    val[k]=[]
-                    for const in constInfo:
-                        if const[k] == "auto":
-                            top = Topology(sequencesName+".coord",sequencesName+".top")
-                            const[k]=constraintAuto(constraintType,const,top)
-                        val[k].append(const[k])
-                for k in ks:
-                    SIMULATION_OPTIONS[k]=val[k]
-    
-        if mod == "boundaries":
-            for boundaryType in conf['SIMULATION']['modifications']['boundaries']:
-                print("[INFO] Adding",boundaryType)
-                flag = "boundary"+(boundaryType[0].capitalize()+boundaryType[1::])+"Active"
-                SIMULATION_OPTIONS[flag]=""
-                options = conf['SIMULATION']['modifications']['boundaries'][boundaryType]
-                if(boundaryType == "zPlates"):
-                    if(options["initialPlatesSeparation"] == "auto"):
-    
-                        top = Topology(sequencesName+".coord",sequencesName+".top")
-                        
-                        maxRadius = 0
-                        for tinfo in top.propertiesLoaded['TYPES']:
-                            t=tinfo[0].split()[0]
-                            R=float(tinfo[0].split()[2])
-                            maxRadius=max(maxRadius,R)
-    
-                        maxHeight = 0
-                        minHeight = 0
-                        for c in top.coordLoaded:
-                            pos = np.asarray([float(p) for p in c[1].split()])
-                            z=pos[2]
-                            maxHeight=max(maxHeight,z)
-                            minHeight=min(minHeight,z)
-    
-                        maxSep = max(abs(maxHeight)+maxRadius*1.5,abs(minHeight)+maxRadius*1.5)
-                        maxSep = maxSep*2.0
-                        options["initialPlatesSeparation"]=maxSep
-    
+    if 'modifications' in conf['SIMULATION']:
+        print("[INFO] Adding simulation modifications ...")
+        for mod in conf['SIMULATION']['modifications']:
+            if mod == "pulling":
+                for pullingType in conf['SIMULATION']['modifications']['pulling']:
+                    print("[INFO] Adding",pullingType)
+                    flag = mod+(pullingType[0].capitalize()+pullingType[1::])+"Active"
+                    SIMULATION_OPTIONS[flag]=""
+                    options = conf['SIMULATION']['modifications']['pulling'][pullingType]
                     for opt in options:
                         SIMULATION_OPTIONS[opt]=options[opt]
+            if mod == "constraints":
+                for constraintType in conf['SIMULATION']['modifications']['constraints']:
+                    print("[INFO] Adding",constraintType)
+                    flag = "constraint"+(constraintType[0].capitalize()+constraintType[1::])+"Active"
+                    SIMULATION_OPTIONS[flag]=""
+                    #list of constraints of type constraintType
+                    constInfo = conf['SIMULATION']['modifications']['constraints'][constraintType]
+                    
+                    if type(constInfo) != tuple:
+                        constInfo=(constInfo,)
+
+                    ks = (constInfo[0]).keys()
+                    val = {}
+                    for k in ks:
+                        val[k]=[]
+                        for const in constInfo:
+                            if const[k] == "auto":
+                                top = Topology(sequencesName+".coord",sequencesName+".top")
+                                const[k]=constraintAuto(constraintType,const,top)
+                            val[k].append(const[k])
+                    for k in ks:
+                        SIMULATION_OPTIONS[k]=val[k]
+        
+            if mod == "boundaries":
+                for boundaryType in conf['SIMULATION']['modifications']['boundaries']:
+                    print("[INFO] Adding",boundaryType)
+                    flag = "boundary"+(boundaryType[0].capitalize()+boundaryType[1::])+"Active"
+                    SIMULATION_OPTIONS[flag]=""
+                    options = conf['SIMULATION']['modifications']['boundaries'][boundaryType]
+                    if(boundaryType == "zPlates"):
+                        if(options["initialPlatesSeparation"] == "auto"):
+        
+                            top = Topology(sequencesName+".coord",sequencesName+".top")
+                            
+                            maxRadius = 0
+                            for tinfo in top.propertiesLoaded['TYPES']:
+                                t=tinfo[0].split()[0]
+                                R=float(tinfo[0].split()[2])
+                                maxRadius=max(maxRadius,R)
+        
+                            maxHeight = 0
+                            minHeight = 0
+                            for c in top.coordLoaded:
+                                pos = np.asarray([float(p) for p in c[1].split()])
+                                z=pos[2]
+                                maxHeight=max(maxHeight,z)
+                                minHeight=min(minHeight,z)
+        
+                            maxSep = max(abs(maxHeight)+maxRadius*1.5,abs(minHeight)+maxRadius*1.5)
+                            maxSep = maxSep*2.0
+                            options["initialPlatesSeparation"]=maxSep
+        
+                        for opt in options:
+                            SIMULATION_OPTIONS[opt]=options[opt]
+    
+    if 'measures' in conf['SIMULATION']:
+        print("[INFO] Adding simulation measures ...")
+        flag = "measuresActive"
+        SIMULATION_OPTIONS[flag]=""
+        measuresTypes = ""
+        
+        dt = float(SIMULATION_OPTIONS['dt'])
+        SIMULATION_OPTIONS["nStepsMeasure"]=int(float(conf['SIMULATION']['measures']['measureTime'])/dt)
+
+        for m in conf['SIMULATION']['measures']['measuresList']:
+            measuresTypes+=m+" "
+        SIMULATION_OPTIONS["measuresList"]=measuresTypes
     
     #########################Writeout options.dat########################
     
