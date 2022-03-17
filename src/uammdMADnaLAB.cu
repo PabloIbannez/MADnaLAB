@@ -223,7 +223,7 @@ class MeasuresList: public SimulationStep{
                     s = simId[groupIndex[0]];
                 }
 
-                measuresFiles[s] << step << " " << simulationTime << " ";
+                measuresFiles[s] << step << " " << simulationTime*SimulationType::ForceField::Units::FROM_INTERNAL_TIME << " ";
 
                 for(std::string m : measuresList){
                     if        (m == "temperature"){
@@ -362,7 +362,7 @@ int main(int argc, char** argv){
     }
 
     {
-        WriteStep::Parameters paramBase = WriteStep::inputFileToParam(in);
+        WriteStep<ff::Units>::Parameters paramBase = WriteStep<ff::Units>::inputFileToParam(in);
 
         int interval = std::stoi(in.getOption("nStepsWriteInterval",uammd::InputFile::Required).str());
         
@@ -373,14 +373,14 @@ int main(int argc, char** argv){
             auto simId = pd->getSimulationId(uammd::access::location::cpu,uammd::access::mode::read);
             int  s = simId[groupIndex[0]];
             
-            WriteStep::Parameters param = paramBase;
+            WriteStep<ff::Units>::Parameters param = paramBase;
             param.outPutFilePath = paramBase.outPutFilePath+"_"+std::to_string(s);
             
-            std::shared_ptr<WriteStep> wStep = std::make_shared<WriteStep>(sys,
-                                                                           pd,
-                                                                           pg,
-                                                                           interval,
-                                                                           param);
+            std::shared_ptr<WriteStep<ff::Units>> wStep = std::make_shared<WriteStep<ff::Units>>(sys,
+                                                                                                 pd,
+                                                                                                 pg,
+                                                                                                 interval,
+                                                                                                 param);
 
             wStep->setPBC(false);
             sim->addSimulationStep(wStep);
