@@ -11,3 +11,6 @@
 
 # Ignore `bin` dir
 bin/*
+
+# Ignore pycache dir
+src/__pycache__/*

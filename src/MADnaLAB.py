@@ -11,7 +11,7 @@ import libconf
 
 from Topology import *
 
-createMoleculePath = "~/UAMMD/extensions/structured/Tools/MADna/CreateMolecule/CreateMolecule.py"
+createMoleculePath = os.getenv('UAMMDPATH')+"/extensions/structured/Tools/MADna/CreateMolecule/CreateMolecule.py"
 
 ######### DEFAULT OPTIONS #########
 
