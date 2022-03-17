@@ -1,10 +1,10 @@
 ARCH=86
 CXX=g++
 
-UAMMD_ROOT=/home/pablo/UAMMD
+UAMMD_ROOT=/home/pablo/Desktop/UAMMD
 UAMMD_STRUCTURED_ROOT=$(UAMMD_ROOT)/extensions/structured/
 
-CUDA_ROOT=/usr/local/cuda-11.3
+CUDA_ROOT=/usr/local/cuda
 NVCC=$(CUDA_ROOT)/bin/nvcc
 
 #Uncomment to compile in double precision mode, single by default
@@ -14,7 +14,9 @@ NVCC=$(CUDA_ROOT)/bin/nvcc
 LOG_LEVEL=6
 
 #Uncomment to add debug flags to nvcc
-#DEBUG=  -src-in-ptx -g -G -DUAMMD_DEBUG
+#DEBUG=  -ptx -src-in-ptx -G  -g
+
+$(foreach sm,$(ARCH),$(eval GENCODE_FLAGS += -gencode arch=compute_$(sm),code=sm_$(sm)))
 
 #Flags to $(CXX)
 CPU= -O3 -march=native -fPIC 
