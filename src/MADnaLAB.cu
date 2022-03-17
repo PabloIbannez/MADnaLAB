@@ -156,11 +156,11 @@ int main(int argc, char** argv){
     
     uammd::InputFile in("options.dat");
 
-    SIM sim(sys,in);
+    std::shared_ptr<SIM> sim = std::make_shared<SIM>(sys,in);
 
-    auto top = sim.getTopology();
-    auto pd  = sim.getParticleData();
-    auto pg  = sim.getParticleGroup();
+    auto top = sim->getTopology();
+    auto pd  = sim->getParticleData();
+    auto pg  = sim->getParticleGroup();
         
     std::vector<std::shared_ptr<uammd::ParticleGroup>> simGroups;
     {
@@ -229,7 +229,7 @@ int main(int argc, char** argv){
                                                                            param);
 
             wStep->setPBC(false);
-            sim.addSimulationStep(wStep);
+            sim->addSimulationStep(wStep);
         }
     }
 
@@ -268,7 +268,7 @@ int main(int argc, char** argv){
             
         pullingInteractor->setState(ff::Units::TO_INTERNAL_FORCE*pullingForce);
 
-        sim.addInteractor(pullingInteractor);
+        sim->addInteractor(pullingInteractor);
 
     } 
     
@@ -303,7 +303,7 @@ int main(int argc, char** argv){
             
         pullingExternalInteractor->setState(ff::Units::TO_INTERNAL_FORCE*pullingExternalForce);
 
-        sim.addInteractor(pullingExternalInteractor);
+        sim->addInteractor(pullingExternalInteractor);
     } 
     
     //Constraints 
@@ -363,7 +363,7 @@ int main(int argc, char** argv){
                 
             harmonicCOMInteractor->setState(COMdistance);
 
-            sim.addInteractor(harmonicCOMInteractor);
+            sim->addInteractor(harmonicCOMInteractor);
 
         }
     } 
@@ -417,7 +417,7 @@ int main(int argc, char** argv){
                 
             harmonicFixedInteractor->setState(fixedPoint);
 
-            sim.addInteractor(harmonicFixedInteractor);
+            sim->addInteractor(harmonicFixedInteractor);
 
         }
 
@@ -450,11 +450,11 @@ int main(int argc, char** argv){
                                                                                                       pg,
                                                                                                       par);
         
-        sim.addInteractor(compressiblePlates);
+        sim->addInteractor(compressiblePlates);
 
     }
 
-    sim.run();
+    sim->run();
 
     return EXIT_SUCCESS;
 }
