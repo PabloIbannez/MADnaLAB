@@ -273,7 +273,7 @@ int main(int argc, char** argv){
     } 
     
     //Pulling external force
-    if(in.getOption("pullingExternalActive",uammd::InputFile::Optional)){
+    if(in.getOption("pullingExternalForceActive",uammd::InputFile::Optional)){
         
         uammd::real3 pullingExternalForce;
         in.getOption("pullingExternalForce",uammd::InputFile::Required) >> pullingExternalForce.x 
