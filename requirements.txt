@@ -1,4 +1,4 @@
-scanf==1.5.2
-numpy==1.19.5
-scipy==1.5.4
-libconf==2.0.1
+scanf>=1.5.2
+numpy>=1.19.5
+scipy>=1.5.4
+libconf>=2.0.1
