@@ -154,9 +154,9 @@ def rotateStructure(axis,angle,top):
         top.coordLoaded[i]=pNew.copy()
 
 def constraintAuto(constraintType,constInfo,top):
-    if constraintType == "harmonicCOMdistance":
-        bp1 = constInfo["constrainedBasePair1"]
-        bp2 = constInfo["constrainedBasePair2"]
+    if constraintType == "distanceBtwCOM":
+        bp1 = constInfo["basePair1"]
+        bp2 = constInfo["basePair2"]
         
         bp1_indices = getAllPairsIndex(bp1,top)
         bp2_indices = getAllPairsIndex(bp2,top)
@@ -172,8 +172,8 @@ def constraintAuto(constraintType,constInfo,top):
             com2+=computeCOM(bp2_indices[i],top)
         com2/=nSim
         return np.linalg.norm(com2-com1)
-    elif constraintType == "harmonicCOMfixed":
-        fbp = constInfo["fixedBasePair1"]
+    elif constraintType == "positionOfCOM":
+        fbp = constInfo["basePair"]
         
         fbp_indices = getAllPairsIndex(fbp,top)
 
@@ -258,8 +258,8 @@ def genMADna(cfgFile):
             if(trans == "alingAlongAxis"):
                 
                 axis= conf['SEQUENCES']['transformations']['alingAlongAxis']['axis']
-                bp1 = conf['SEQUENCES']['transformations']['alingAlongAxis']['basisPair1']
-                bp2 = conf['SEQUENCES']['transformations']['alingAlongAxis']['basisPair2']
+                bp1 = conf['SEQUENCES']['transformations']['alingAlongAxis']['basePair1']
+                bp2 = conf['SEQUENCES']['transformations']['alingAlongAxis']['basePair2']
     
                 print("[INFO] Transformation \"alingAlongAxis\", with axis:",axis,", base pair 1:",bp1," and base pair 2:",bp2)
                 for s in sequencesList:
@@ -373,14 +373,15 @@ def genMADna(cfgFile):
     if 'modifications' in conf['SIMULATION']:
         print("[INFO] Adding simulation modifications ...")
         for mod in conf['SIMULATION']['modifications']:
-            if mod == "pulling":
-                for pullingType in conf['SIMULATION']['modifications']['pulling']:
-                    print("[INFO] Adding",pullingType)
-                    flag = mod+(pullingType[0].capitalize()+pullingType[1::])+"Active"
+            if mod == "external":
+                for externalType in conf['SIMULATION']['modifications']['external']:
+                    print("[INFO] Adding",externalType)
+                    flag = mod+(externalType[0].capitalize()+externalType[1::])+"Active"
                     SIMULATION_OPTIONS[flag]=""
-                    options = conf['SIMULATION']['modifications']['pulling'][pullingType]
+                    options = conf['SIMULATION']['modifications']['external'][externalType]
                     for opt in options:
-                        SIMULATION_OPTIONS[opt]=options[opt]
+                        opt2print = (externalType[0]+externalType[1::])+opt
+                        SIMULATION_OPTIONS[opt2print]=options[opt]
             if mod == "constraints":
                 for constraintType in conf['SIMULATION']['modifications']['constraints']:
                     print("[INFO] Adding",constraintType)
@@ -402,7 +403,8 @@ def genMADna(cfgFile):
                                 const[k]=constraintAuto(constraintType,const,top)
                             val[k].append(const[k])
                     for k in ks:
-                        SIMULATION_OPTIONS[k]=val[k]
+                        k2print = constraintType[0]+constraintType[1::] + k
+                        SIMULATION_OPTIONS[k2print]=val[k]
         
             if mod == "boundaries":
                 for boundaryType in conf['SIMULATION']['modifications']['boundaries']:

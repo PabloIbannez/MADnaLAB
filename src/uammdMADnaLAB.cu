@@ -50,6 +50,7 @@ thrust::host_vector<int> getBasisPairsSet(int pairBasePosition,
                                           std::shared_ptr<uammd::ParticleData> pd,
                                           std::shared_ptr<ff::Topology> top,
                                           std::vector<std::shared_ptr<uammd::ParticleGroup>>& simGroups,
+                                          std::vector<std::string>& types,
                                           std::shared_ptr<uammd::System> sys){
         
     thrust::host_vector<int> set;
@@ -91,7 +92,9 @@ thrust::host_vector<int> getBasisPairsSet(int pairBasePosition,
             int pid   = id[index];
             int basis = res[index];
 
-            if(top->getTypes()->getTypeParameters(type).name == "S"){
+            std::string typeName = top->getTypes()->getTypeParameters(type).name;
+
+            if(std::find(types.begin(),types.end(),typeName) != types.end()){
                 if        (basis == b11){
                     set.push_back(pid);
                 } else if (basis == b12){
@@ -196,7 +199,12 @@ class MeasuresList: public SimulationStep{
                             measuresFiles[s] << pot << " ";
                         }
                         for(auto& inter : sim->getIntegrator()->getInteractors()){
-                            measuresFiles[s] << inter->getName() << " ";
+                            std::string interactorName = inter->getName();
+
+                            interactorName.erase(std::remove_if(std::begin(interactorName),std::end(interactorName),
+                                                                [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), std::end(interactorName));
+
+                            measuresFiles[s] << interactorName << " ";
                         }
                     } else {
                         sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
@@ -293,6 +301,9 @@ class MeasuresList: public SimulationStep{
 
 int main(int argc, char** argv){
 
+    std::vector<std::string> allTypes  = {"S","P","A","C","G","T"};
+    std::vector<std::string> sugarType = {"S"};
+
     auto sys = std::make_shared<uammd::System>();
     
     //ullint seed = 0xf31337Bada55D00dULL^time(NULL);
@@ -388,193 +399,317 @@ int main(int argc, char** argv){
     }
 
     //Pulling
-    if(in.getOption("pullingActive",uammd::InputFile::Optional)){
+    if(in.getOption("externalForceBtwCOMActive",uammd::InputFile::Optional)){
         
-        uammd::real pullingForce;
-        in.getOption("pullingForce",uammd::InputFile::Required) >> pullingForce;
+        uammd::real forceBtwCOMforce;
+        in.getOption("forceBtwCOMforce",uammd::InputFile::Required) >> forceBtwCOMforce;
 
-        int pullingBasePair1;
-        in.getOption("pullingBasePair1",uammd::InputFile::Required) >> pullingBasePair1;
-
-        int pullingBasePair2;
-        in.getOption("pullingBasePair2",uammd::InputFile::Required) >> pullingBasePair2;
+        int forceBtwCOMbasePair1;
+        int forceBtwCOMbasePair2;
+        
+        in.getOption("forceBtwCOMbasePair1",uammd::InputFile::Required) >> forceBtwCOMbasePair1;
+        in.getOption("forceBtwCOMbasePair2",uammd::InputFile::Required) >> forceBtwCOMbasePair2;
         
         sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
-                                         "Pulling force: %f",
-                                          pullingForce);
+                                         "External force between center of mass: %f",
+                                          forceBtwCOMforce);
         
-        thrust::host_vector<int> set1 = getBasisPairsSet(pullingBasePair1,
+        thrust::host_vector<int> set1 = getBasisPairsSet(forceBtwCOMbasePair1,
                                                          pd,top,
                                                          simGroups,
+                                                         sugarType,
                                                          sys);
         
-        thrust::host_vector<int> set2 = getBasisPairsSet(pullingBasePair2,
+        thrust::host_vector<int> set2 = getBasisPairsSet(forceBtwCOMbasePair2,
                                                          pd,top,
                                                          simGroups,
+                                                         sugarType,
                                                          sys);
         
-        std::shared_ptr<Interactor::ConstantForceCOMCopies> pullingInteractor = std::make_shared<Interactor::ConstantForceCOMCopies>(sys,
-                                                                                                                                     pd,pg,
-                                                                                                                                     2,2,
-                                                                                                                                     set1,set2,
-                                                                                                                                     simGroups.size(),
-                                                                                                                                     Interactor::ConstantForceCOMCopies::Parameters());
+        std::shared_ptr<Interactor::ConstantForceCOMCopies> externalForceBtwCOM 
+        = std::make_shared<Interactor::ConstantForceCOMCopies>(sys,
+                                                               pd,pg,
+                                                               2,2,
+                                                               set1,set2,
+                                                               simGroups.size(),
+                                                               Interactor::ConstantForceCOMCopies::Parameters());
             
-        pullingInteractor->setState(ff::Units::TO_INTERNAL_FORCE*pullingForce);
+        externalForceBtwCOM->setState(ff::Units::TO_INTERNAL_FORCE*forceBtwCOMforce);
 
-        sim->addInteractor(pullingInteractor);
+        sim->addInteractor(externalForceBtwCOM);
 
     } 
     
     //Pulling external force
-    if(in.getOption("pullingExternalForceActive",uammd::InputFile::Optional)){
+    if(in.getOption("externalForceActive",uammd::InputFile::Optional)){
         
-        uammd::real3 pullingExternalForce;
-        in.getOption("pullingExternalForce",uammd::InputFile::Required) >> pullingExternalForce.x 
-                                                                        >> pullingExternalForce.y
-                                                                        >> pullingExternalForce.z;
+        uammd::real3 forceforce;
+        in.getOption("forceforce",uammd::InputFile::Required) >> forceforce.x 
+                                                              >> forceforce.y
+                                                              >> forceforce.z;
 
-        int pullingExternalBasePair1;
-        in.getOption("pullingExternalBasePair1",uammd::InputFile::Required) >> pullingExternalBasePair1;
+        int forcebasePair;
+        in.getOption("forcebasePair",uammd::InputFile::Required) >> forcebasePair;
 
         sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
-                                         "Pulling external force: %f,%f,%f",
-                                          pullingExternalForce.x,
-                                          pullingExternalForce.y,
-                                          pullingExternalForce.z);
+                                         "External force on pair: %i",
+                                          forcebasePair);
             
-        thrust::host_vector<int> set1 = getBasisPairsSet(pullingExternalBasePair1,
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "External force: %f,%f,%f",
+                                          forceforce.x,
+                                          forceforce.y,
+                                          forceforce.z);
+        
+        thrust::host_vector<int> set1 = getBasisPairsSet(forcebasePair,
                                                          pd,top,
                                                          simGroups,
+                                                         sugarType,
                                                          sys);
         
-        std::shared_ptr<Interactor::ExternalCOMCopies> pullingExternalInteractor = std::make_shared<Interactor::ExternalCOMCopies>(sys,
-                                                                                                                                   pd,pg,
-                                                                                                                                   2,
-                                                                                                                                   set1,
-                                                                                                                                   simGroups.size(),
-                                                                                                                                   Interactor::ExternalCOMCopies::Parameters());
+        std::shared_ptr<Interactor::ExternalCOMCopies> externalForceInteractor = std::make_shared<Interactor::ExternalCOMCopies>(sys,
+                                                                                                                                 pd,pg,
+                                                                                                                                 2,
+                                                                                                                                 set1,
+                                                                                                                                 simGroups.size(),
+                                                                                                                                 Interactor::ExternalCOMCopies::Parameters());
             
-        pullingExternalInteractor->setState(ff::Units::TO_INTERNAL_FORCE*pullingExternalForce);
+        externalForceInteractor->setState(ff::Units::TO_INTERNAL_FORCE*forceforce);
 
-        sim->addInteractor(pullingExternalInteractor);
+        sim->addInteractor(externalForceInteractor);
+    } 
+    
+    //external torque
+    if(in.getOption("externalTorqueActive",uammd::InputFile::Optional)){
+        
+        uammd::real3 torquetorque;
+        in.getOption("torquetorque",uammd::InputFile::Required) >> torquetorque.x 
+                                                                >> torquetorque.y
+                                                                >> torquetorque.z;
+
+        int torquebasePair;
+        in.getOption("torquebasePair",uammd::InputFile::Required) >> torquebasePair;
+
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "External torque on pair: %i",
+                                          torquebasePair);
+            
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "External torque: %f,%f,%f",
+                                          torquetorque.x,
+                                          torquetorque.y,
+                                          torquetorque.z);
+        
+        thrust::host_vector<int> set1 = getBasisPairsSet(torquebasePair,
+                                                         pd,top,
+                                                         simGroups,
+                                                         allTypes,
+                                                         sys);
+        
+        std::shared_ptr<Interactor::ExternalTorqueCOMCopies> externalTorqueInteractor = std::make_shared<Interactor::ExternalTorqueCOMCopies>(sys,
+                                                                                                                                              pd,pg,
+                                                                                                                                              2,
+                                                                                                                                              set1,
+                                                                                                                                              simGroups.size(),
+                                                                                                                                              Interactor::ExternalTorqueCOMCopies::Parameters());
+            
+        externalTorqueInteractor->setState(ff::Units::TO_INTERNAL_FORCE*torquetorque);
+
+        sim->addInteractor(externalTorqueInteractor);
     } 
     
     //Constraints 
 
     //fixed distance between COM of two particles (Harmonic)
-    if(in.getOption("harmonicCOMdistanceActive",uammd::InputFile::Optional)){
+    if(in.getOption("constraintDistanceBtwCOMActive",uammd::InputFile::Optional)){
         
-        std::stringstream constrainedBasePair1_stream = std::stringstream(in.getOption("constrainedBasePair1",uammd::InputFile::Required).str());
-        std::stringstream constrainedBasePair2_stream = std::stringstream(in.getOption("constrainedBasePair2",uammd::InputFile::Required).str());
-        std::stringstream COMdistance_stream          = std::stringstream(in.getOption("COMdistance",uammd::InputFile::Required).str());
-        std::stringstream COMk_stream                 = std::stringstream(in.getOption("COMk",uammd::InputFile::Required).str());
+        std::stringstream distanceBtwCOMbasePair1_stream = std::stringstream(in.getOption("distanceBtwCOMbasePair1",uammd::InputFile::Required).str());
+        std::stringstream distanceBtwCOMbasePair2_stream = std::stringstream(in.getOption("distanceBtwCOMbasePair2",uammd::InputFile::Required).str());
+        std::stringstream distanceBtwCOMdistance_stream  = std::stringstream(in.getOption("distanceBtwCOMdistance",uammd::InputFile::Required).str());
+        std::stringstream distanceBtwCOMK_stream         = std::stringstream(in.getOption("distanceBtwCOMK",uammd::InputFile::Required).str());
         
-        int constrainedBasePair1;
-        int constrainedBasePair2;
+        int distanceBtwCOMbasePair1;
+        int distanceBtwCOMbasePair2;
         
-        while(constrainedBasePair1_stream >> constrainedBasePair1){
-              constrainedBasePair2_stream >> constrainedBasePair2;
+        while(distanceBtwCOMbasePair1_stream >> distanceBtwCOMbasePair1){
             
-            uammd::real COMdistance;
-            uammd::real COMk;
+            distanceBtwCOMbasePair2_stream >> distanceBtwCOMbasePair2;
+            
+            uammd::real distanceBtwCOMdistance;
+            uammd::real distanceBtwCOMK;
 
-            COMdistance_stream >> COMdistance;
-            COMk_stream >> COMk;
+            distanceBtwCOMdistance_stream >> distanceBtwCOMdistance;
+            distanceBtwCOMK_stream >> distanceBtwCOMK;
             
             sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
                                              "Base pairs constrained: %i, %i",
-                                              constrainedBasePair1,
-                                              constrainedBasePair2);
+                                              distanceBtwCOMbasePair1,
+                                              distanceBtwCOMbasePair2);
 
             sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
                                              "Constrained distance: %f",
-                                              COMdistance);
+                                              distanceBtwCOMdistance);
             
             sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
                                              "Constrained K: %f",
-                                              COMk);
+                                              distanceBtwCOMK);
                 
-            thrust::host_vector<int> set1 = getBasisPairsSet(constrainedBasePair1,
+            thrust::host_vector<int> set1 = getBasisPairsSet(distanceBtwCOMbasePair1,
                                                              pd,top,
                                                              simGroups,
+                                                             sugarType,
                                                              sys);
             
-            thrust::host_vector<int> set2 = getBasisPairsSet(constrainedBasePair2,
+            thrust::host_vector<int> set2 = getBasisPairsSet(distanceBtwCOMbasePair2,
                                                              pd,top,
                                                              simGroups,
+                                                             sugarType,
                                                              sys);
 
             Interactor::HarmonicCOMCopies::Parameters param;
-            param.K = COMk;
+            param.K = distanceBtwCOMK;
             
-            std::shared_ptr<Interactor::HarmonicCOMCopies> harmonicCOMInteractor = std::make_shared<Interactor::HarmonicCOMCopies>(sys,
-                                                                                                                                   pd,pg,
-                                                                                                                                   2,2,
-                                                                                                                                   set1,set2,
-                                                                                                                                   simGroups.size(),
-                                                                                                                                   param);
+            std::shared_ptr<Interactor::HarmonicCOMCopies> constraintDistanceBtwCOMInteractor 
+            = std::make_shared<Interactor::HarmonicCOMCopies>(sys,
+                                                              pd,pg,
+                                                              2,2,
+                                                              set1,set2,
+                                                              simGroups.size(),
+                                                              param);
                 
-            harmonicCOMInteractor->setState(COMdistance);
+            constraintDistanceBtwCOMInteractor->setState(distanceBtwCOMdistance);
 
-            sim->addInteractor(harmonicCOMInteractor);
+            sim->addInteractor(constraintDistanceBtwCOMInteractor);
 
         }
     } 
     
     //COM fixed (Harmonic)
-    if(in.getOption("constraintHarmonicCOMfixedActive",uammd::InputFile::Optional)){
+    if(in.getOption("constraintPositionOfCOMActive",uammd::InputFile::Optional)){
         
-        std::stringstream fixedBasePair1_stream = std::stringstream(in.getOption("fixedBasePair1",uammd::InputFile::Required).str());
-        std::stringstream fixedPoint_stream     = std::stringstream(in.getOption("fixedPoint",uammd::InputFile::Required).str());
-        std::stringstream Kfixed_stream         = std::stringstream(in.getOption("Kfixed",uammd::InputFile::Required).str());
+        std::stringstream positionOfCOMbasePair_stream = std::stringstream(in.getOption("positionOfCOMbasePair",uammd::InputFile::Required).str());
+        std::stringstream positionOfCOMposition_stream     = std::stringstream(in.getOption("positionOfCOMposition",uammd::InputFile::Required).str());
+        std::stringstream positionOfCOMK_stream         = std::stringstream(in.getOption("positionOfCOMK",uammd::InputFile::Required).str());
         
-        int fixedBasePair1;
-        while(fixedBasePair1_stream >> fixedBasePair1){
+        int positionOfCOMbasePair;
+        while(positionOfCOMbasePair_stream >> positionOfCOMbasePair){
             
-            uammd::real3 fixedPoint;
-            uammd::real3 Kfixed;
+            uammd::real3 positionOfCOMposition;
+            uammd::real3 positionOfCOMK;
 
-            fixedPoint_stream >> fixedPoint.x >> fixedPoint.y >> fixedPoint.z;
-            Kfixed_stream >> Kfixed.x >> Kfixed.y >> Kfixed.z;
+            positionOfCOMposition_stream >> positionOfCOMposition.x >> positionOfCOMposition.y >> positionOfCOMposition.z;
+            positionOfCOMK_stream >> positionOfCOMK.x >> positionOfCOMK.y >> positionOfCOMK.z;
             
             sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
-                                             "Fixed point on base pair: %i",
-                                              fixedBasePair1);
+                                             "Base pair COM constrained: %i",
+                                              positionOfCOMbasePair);
 
             sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
-                                             "Fixed point: %f,%f,%f",
-                                              fixedPoint.x,
-                                              fixedPoint.y,
-                                              fixedPoint.z);
+                                             "COM position: %f,%f,%f",
+                                              positionOfCOMposition.x,
+                                              positionOfCOMposition.y,
+                                              positionOfCOMposition.z);
             
             sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
-                                             "Kfixed: %f,%f,%f",
-                                              Kfixed.x,
-                                              Kfixed.y,
-                                              Kfixed.z);
+                                             "K: %f,%f,%f",
+                                              positionOfCOMK.x,
+                                              positionOfCOMK.y,
+                                              positionOfCOMK.z);
                 
-            thrust::host_vector<int> set1 = getBasisPairsSet(fixedBasePair1,
+            thrust::host_vector<int> set1 = getBasisPairsSet(positionOfCOMbasePair,
                                                              pd,top,
                                                              simGroups,
+                                                             sugarType,
                                                              sys);
 
             Interactor::HarmonicFixedCOMCopies::Parameters param;
-            param.K = Kfixed;
+            param.K = positionOfCOMK;
             
-            std::shared_ptr<Interactor::HarmonicFixedCOMCopies> harmonicFixedInteractor = std::make_shared<Interactor::HarmonicFixedCOMCopies>(sys,
-                                                                                                                                               pd,pg,
-                                                                                                                                               2,
-                                                                                                                                               set1,
-                                                                                                                                               simGroups.size(),
-                                                                                                                                               param);
+            std::shared_ptr<Interactor::HarmonicFixedCOMCopies> constraintPositionOfCOMInteractor 
+            = std::make_shared<Interactor::HarmonicFixedCOMCopies>(sys,
+                                                                   pd,pg,
+                                                                   2,
+                                                                   set1,
+                                                                   simGroups.size(),
+                                                                   param);
                 
-            harmonicFixedInteractor->setState(fixedPoint);
+            constraintPositionOfCOMInteractor->setState(positionOfCOMposition);
 
-            sim->addInteractor(harmonicFixedInteractor);
+            sim->addInteractor(constraintPositionOfCOMInteractor);
 
         }
+    } 
+    
+    //fixed beads pos (Harmonic)
+    if(in.getOption("constraintPositionOfBeadsActive",uammd::InputFile::Optional)){
+        
+        std::stringstream positionOfBeadsbasePair_stream = std::stringstream(in.getOption("positionOfBeadsbasePair",uammd::InputFile::Required).str());
+        std::stringstream positionOfBeadsK_stream         = std::stringstream(in.getOption("positionOfBeadsK",uammd::InputFile::Required).str());
+        
+        int positionOfBeadsbasePair;
+        while(positionOfBeadsbasePair_stream >> positionOfBeadsbasePair){
+            
+            uammd::real3 positionOfBeadsK;
 
+            positionOfBeadsK_stream >> positionOfBeadsK.x >> positionOfBeadsK.y >> positionOfBeadsK.z;
+            
+            sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                             "Fixed point on base pair: %i",
+                                              positionOfBeadsbasePair);
+
+            sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                             "positionOfBeadsK: %f,%f,%f",
+                                              positionOfBeadsK.x,
+                                              positionOfBeadsK.y,
+                                              positionOfBeadsK.z);
+                
+            thrust::host_vector<int> set1 = getBasisPairsSet(positionOfBeadsbasePair,
+                                                             pd,top,
+                                                             simGroups,
+                                                             allTypes,
+                                                             sys);
+
+            using FixedType                 = Potentials::Bond1::HarmonicConst_K_r0;
+            using InteractorHarmonicFixed   = Interactor::BondedInteractor<FixedType,
+                                                                           Interactor::BondedInteractor_ns::BondProcessor<FixedType>,
+                                                                           Interactor::BondedInteractor_ns::BondReaderFromVector<FixedType>>;
+
+            FixedType::Parameters fixedParameters;
+
+            fixedParameters.K  = positionOfBeadsK;
+            fixedParameters.r0 = {0.0,0.0,0.0};
+
+            std::shared_ptr<FixedType> fb = std::make_shared<FixedType>(pd,
+                                                                        fixedParameters);
+            
+            typename InteractorHarmonicFixed::Parameters interactorFixedParameters;
+            
+            interactorFixedParameters.bondName = "FIXED";
+                    
+            //Load fixed
+            std::shared_ptr<std::vector<FixedType::Bond>> fixedVector = std::make_shared<std::vector<FixedType::Bond>>();
+            
+            const int* id2index = pd->getIdOrderedIndices(uammd::access::location::cpu);
+            auto pos   = pd->getPos(uammd::access::location::cpu,uammd::access::mode::read);
+
+            for(int id : set1){
+                int index = id2index[id];
+
+                FixedType::Bond bi;
+
+                bi.i = id;
+                bi.bondInfo.pos = uammd::make_real3(pos[index]);
+
+                fixedVector->push_back(bi);
+            }
+
+            std::shared_ptr<InteractorHarmonicFixed> fixed = std::make_shared<InteractorHarmonicFixed>(sys, pd, pg,
+                                                                                                       fixedVector, fb,
+                                                                                                       interactorFixedParameters);
+            
+            sim->addInteractor(fixed);
+
+        }
     } 
     
     //Boundaries
@@ -583,19 +718,29 @@ int main(int argc, char** argv){
     if(in.getOption("boundaryZPlatesActive",uammd::InputFile::Optional)){
         
         uammd::real initialPlatesSeparation;
-        uammd::real endPlatesSeparation;
+        uammd::real finalPlatesSeparation;
         
         uammd::real compressionVelocity;
         
         in.getOption("initialPlatesSeparation",uammd::InputFile::Required) >> initialPlatesSeparation;
-        in.getOption("endPlatesSeparation",uammd::InputFile::Required) >> endPlatesSeparation;
+        in.getOption("finalPlatesSeparation",uammd::InputFile::Required) >> finalPlatesSeparation;
         
         in.getOption("compressionVelocity",uammd::InputFile::Required) >> compressionVelocity;
+        
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Initial plates separation: %f",
+                                          initialPlatesSeparation);
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Final plates separation: %f",
+                                          finalPlatesSeparation);
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Compression velocity: %f",
+                                          compressionVelocity);
 
         CompressiblePlates::Parameters par;
 
         par.initialPlatesSeparation = initialPlatesSeparation;
-        par.endPlatesSeparation = endPlatesSeparation;
+        par.endPlatesSeparation = finalPlatesSeparation;
         
         par.compressionVelocity = compressionVelocity/ff::Units::TO_INTERNAL_TIME;
         
