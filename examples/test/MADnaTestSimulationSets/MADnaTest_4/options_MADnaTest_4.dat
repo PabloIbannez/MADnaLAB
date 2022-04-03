@@ -1,0 +1,27 @@
+boxSize 10000.0 10000.0 10000.0
+T 300.0
+h 0.001
+nStepsSteepestDescent 0
+nStepsSteepestDescentProgressInterval 100
+maxObjectiveForce 5.0
+outPutFilePath output
+outPutFormat lammpstrj
+dt 0.01
+frictionConstant 0.2
+dielectricConstant 78.3
+debyeLength 10.8929
+cutOffDstWCA 25.0
+modelName MADna
+nSteps 2000000
+nStepsInfoInterval 100000
+nStepsWriteInterval 100000
+nStepsBackupInterval 1000000
+cutOffDstDH 43.5716
+VerletListDst 48.5716
+simulationSetName MADnaTest_4
+simulationSetFolder MADnaTestSimulationSets/MADnaTest_4/
+inputCoordPath MADnaTestSimulationSets/MADnaTest_4/MADnaTest_4.coord
+inputTopologyPath MADnaTestSimulationSets/MADnaTest_4/MADnaTest_4.top
+externalForceBtwCOMActive 
+externalForceBtwCOMFilePath MADnaTestSimulationSets/MADnaTest_4/externalForceBtwCOM_MADnaTest_4.dat
+outPutFolders MADnaTestSimulationSets/MADnaTest_4/filePath_MADnaTest_4.dat
