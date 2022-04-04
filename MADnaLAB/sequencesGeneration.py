@@ -252,34 +252,51 @@ def generateTopologyFromSimulationPoolMergingFromHashedSequences(simulationPool,
                   " Not found seq:",sim["seq"],"in hashed sequences")
             sys.exit(0)
     
-    if len(simulationPool) > 1:
+    #if len(simulationPool) > 1:
 
-        hashedName1 = hashedSequences[simulationPool[0]['seq']]
-        hashedName2 = hashedSequences[simulationPool[1]['seq']]
+    #    hashedName1 = hashedSequences[simulationPool[0]['seq']]
+    #    hashedName2 = hashedSequences[simulationPool[1]['seq']]
 
-        top1 = Topology(hashedName1 + '.coord', hashedName1 + '.top')
-        top1.setSimId(simulationPool[0]['simId'])
-        top2 = Topology(hashedName2 + '.coord', hashedName2 + '.top')
-        top2.setSimId(simulationPool[1]['simId'])
+    #    top1 = Topology(hashedName1 + '.coord', hashedName1 + '.top')
+    #    top1.setSimId(simulationPool[0]['simId'])
+    #    top2 = Topology(hashedName2 + '.coord', hashedName2 + '.top')
+    #    top2.setSimId(simulationPool[1]['simId'])
 
-        merging2File(top1, top2, topologyPath, 'none')
-        for i, s in enumerate(simulationPool):
-            if i < 2:
-                pass
-            else:
-                hashedName = hashedSequences[s['seq']]
+    #    merging2File(top1, top2, topologyPath, 'none')
+    #    for i, s in enumerate(simulationPool):
+    #        if i < 2:
+    #            pass
+    #        else:
+    #            hashedName = hashedSequences[s['seq']]
 
-                top1 = Topology(topologyPath + '.coord', topologyPath + '.top')
-                top2 = Topology(hashedName + '.coord', hashedName + '.top')
+    #            top1 = Topology(topologyPath + '.coord', topologyPath + '.top')
+    #            top2 = Topology(hashedName + '.coord', hashedName + '.top')
 
-                top2.setSimId(s['simId'])
+    #            top2.setSimId(s['simId'])
 
-                merging2File(top1, top2, topologyPath, 'none')
+    #            merging2File(top1, top2, topologyPath, 'none')
 
-    else:
-        hashedName = hashedSequences[simulationPool[0]['seq']]
+    #else:
+    #    hashedName = hashedSequences[simulationPool[0]['seq']]
 
-        top = Topology(hashedName + '.coord', hashedName + '.top')
+    #    top = Topology(hashedName + '.coord', hashedName + '.top')
 
-        top.setSimId(simulationPool[0]['simId'])
-        top.write(topologyPath)
+    #    top.setSimId(simulationPool[0]['simId'])
+    #    top.write(topologyPath)
+
+    hashedName = hashedSequences[simulationPool[0]['seq']]
+
+    top = Topology(hashedName + '.coord', hashedName + '.top')
+    top.setSimId(simulationPool[0]['simId'])
+    for i, s in enumerate(simulationPool):
+        if i < 1:
+            pass
+        else:
+            hashedName = hashedSequences[s['seq']]
+
+            topTmp = Topology(hashedName + '.coord', hashedName + '.top')
+            topTmp.setSimId(s['simId'])
+
+            top.append(topTmp, 'none')
+
+    top.write(topologyPath)
