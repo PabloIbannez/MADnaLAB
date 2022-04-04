@@ -73,7 +73,7 @@ for simSet, simPool in enumerate(tqdm(simulationPoolList)):
     ########################################################
 
     seq_hsh = hashSequencesFromSimulationPool(simPool)
-    generateMADnaTopologiesFromHashedSequences(seq_hsh)
+    generateMADnaTopologiesFromCONFAndHashedSequences(conf,seq_hsh)
     applyTransformationsFromCONFToTopologiesGeneratedFromHashedSequences(conf,seq_hsh)
 
     generateTopologyFromSimulationPoolMergingFromHashedSequences(simPool,seq_hsh,simSetFolder+simSetName)

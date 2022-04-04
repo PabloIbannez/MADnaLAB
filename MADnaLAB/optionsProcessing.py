@@ -11,7 +11,7 @@ from MADnaLAB.geometric import *
 def generateOptionsFromCONF(conf):
     OPTIONS = DEFAULT_SIMULATION_OPTIONS.copy()
 
-    OPTIONS['modelName'] = conf['MAIN']['modelName']
+    OPTIONS['modelName'] = conf['MAIN']['model']['name']
 
     if 'dt' in conf['SIMULATION']['options']:
         OPTIONS['dt'] = conf['SIMULATION']['options']['dt']

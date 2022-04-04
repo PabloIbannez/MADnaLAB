@@ -2,8 +2,11 @@
 
 using namespace uammd::structured;
 
-using ff = forceField::MADna;
-//using ff = forceField::KP;
+using ff  = forceField::EMPTY_KCALMOL_A;
+
+using ffMADna = forceField::MADna;
+using ffWLC   = forceField::KratkyPorodModel::KratkyPorodModel<forceField::ForceFieldBase<ff::Units,Types::BASIC>>;
+
 using SIM = Simulation<ff,SteepestDescent,LangevinNVT::BBK>;
 
 #include "basePair.cuh"
@@ -26,6 +29,25 @@ int main(int argc, char** argv){
     auto top = sim->getTopology();
     auto pd  = sim->getParticleData();
     auto pg  = sim->getParticleGroup();
+    
+    std::string model = in.getOption("modelName",uammd::InputFile::Required).str();
+    {
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Selected model: %s",model.c_str());
+
+               if(model == "MADna"){
+            std::shared_ptr<ffMADna> madna = std::make_shared<ffMADna>(sys,pd,pg,in);
+            sim->addInteractor(madna);
+        } else if(model == "WLC"){
+            std::shared_ptr<ffWLC> wlc = std::make_shared<ffWLC>(sys,pd,pg,in);
+            sim->addInteractor(wlc);
+        } else {
+            sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
+                                              "Selected model: %s, is not implemented",model.c_str());
+        }
+
+    }
+
         
     std::map<int,std::shared_ptr<uammd::ParticleGroup>> simGroups;
     {
@@ -144,8 +166,8 @@ int main(int argc, char** argv){
                 }
             }
 
-            setInfo sI1 = getSet2id<externalForceBtwCOM>(sys,pd,simGroups,top,infoList,i,0);
-            setInfo sI2 = getSet2id<externalForceBtwCOM>(sys,pd,simGroups,top,infoList,i,1);
+            setInfo sI1 = getSet2id<externalForceBtwCOM>(sys,pd,simGroups,top,infoList,i,0,model);
+            setInfo sI2 = getSet2id<externalForceBtwCOM>(sys,pd,simGroups,top,infoList,i,1,model);
 
             thrust::host_vector<uammd::real> F;
 
@@ -219,7 +241,7 @@ int main(int argc, char** argv){
                 }
             }
 
-            setInfo sI = getSet2id<externalForce>(sys,pd,simGroups,top,infoList,i,0);
+            setInfo sI = getSet2id<externalForce>(sys,pd,simGroups,top,infoList,i,0,model);
 
             thrust::host_vector<uammd::real3> F;
 
@@ -293,7 +315,7 @@ int main(int argc, char** argv){
                 }
             }
 
-            setInfo sI = getSet2id<externalTorque>(sys,pd,simGroups,top,infoList,i,0);
+            setInfo sI = getSet2id<externalTorque>(sys,pd,simGroups,top,infoList,i,0,model);
 
             thrust::host_vector<uammd::real3> T;
 
@@ -367,8 +389,8 @@ int main(int argc, char** argv){
                 }
             }
 
-            setInfo sI1 = getSet2id<constraintsDistanceBtwCOM>(sys,pd,simGroups,top,infoList,i,0);
-            setInfo sI2 = getSet2id<constraintsDistanceBtwCOM>(sys,pd,simGroups,top,infoList,i,1);
+            setInfo sI1 = getSet2id<constraintsDistanceBtwCOM>(sys,pd,simGroups,top,infoList,i,0,model);;
+            setInfo sI2 = getSet2id<constraintsDistanceBtwCOM>(sys,pd,simGroups,top,infoList,i,1,model);
 
             thrust::host_vector<uammd::real> r0;
             thrust::host_vector<uammd::real> K;
@@ -440,7 +462,7 @@ int main(int argc, char** argv){
                 }
             }
 
-            setInfo sI = getSet2id<constraintsPositionOfCOM>(sys,pd,simGroups,top,infoList,i,0);
+            setInfo sI = getSet2id<constraintsPositionOfCOM>(sys,pd,simGroups,top,infoList,i,0,model);
             
             thrust::host_vector<uammd::real3> fixedPoint;
             thrust::host_vector<uammd::real3> K;
@@ -530,7 +552,7 @@ int main(int argc, char** argv){
 
         for(int i=0;i<maxEntrySize;i++){
         
-            setInfo sI = getSet2id<constraintsPositionOfBeads>(sys,pd,simGroups,top,infoList,i,0);
+            setInfo sI = getSet2id<constraintsPositionOfBeads>(sys,pd,simGroups,top,infoList,i,0,model);
             
             std::map<int,uammd::real3> simId2K;
             for(auto& info : infoList){

@@ -17,5 +17,5 @@ MADnaLAB.simulationPool.loadModificationsIntoSimulationPoolFromCONF(simPool,cfg)
 
 simPoolSet = MADnaLAB.simulationPool.splitSimulationPoolAccordingToMaxNumberOfBasePairs(simPool,int(sys.argv[1]))
 
-MADnaLAB.simulationSets.generateSimulationSetsFromListOfSimulationPoolUsingMADnaModel(cfg,simPoolSet)
+MADnaLAB.simulationSets.generateSimulationSetsFromListOfSimulationPool(cfg,simPoolSet)
 

@@ -51,7 +51,9 @@ setInfo getSet2id(std::shared_ptr<uammd::System>       sys,
                   std::shared_ptr<ff::Topology> top,
                   std::map<int,std::vector<typename infoType::info>>& infoList,
                   int infoIndex,
-                  int bpIndex){
+                  int bpIndex,
+                  std::string model){
+
     int setSize=-1;
     thrust::host_vector<int> set2id;
 
@@ -63,7 +65,8 @@ setInfo getSet2id(std::shared_ptr<uammd::System>       sys,
                                                    sys,
                                                    simGroups[info.second[infoIndex].simId],
                                                    getBasePairTypeComponents(info.second[infoIndex].type,sys),
-                                                   info.second[infoIndex].bp[bpIndex]);
+                                                   info.second[infoIndex].bp[bpIndex],
+                                                   model);
 
             if(bp_ids.size() == setSize or setSize < 0){
                 setSize = bp_ids.size();

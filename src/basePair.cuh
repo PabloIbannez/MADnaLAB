@@ -3,6 +3,7 @@
 
 int2 basePair2res(int basePairPosition,
                   int nBasis, 
+                  std::string model,
                   std::shared_ptr<uammd::System> sys){
     
     if(nBasis%2!=0){
@@ -28,13 +29,30 @@ int2 basePair2res(int basePairPosition,
     }
 
     int2 res;
+
+    if(model == "MADna"){
             
-    if(basePairPosition > 0){
-        res.x = basePairPosition-1;
-        res.y = nBasis-1-res.x;
+        if(basePairPosition > 0){
+            res.x = basePairPosition-1;
+            res.y = nBasis-1-res.x;
+        } else {
+            res.x = nBasisPairs+basePairPosition;
+            res.y = nBasis-1-res.x;
+        }
+
+    } else if (model == "WLC"){
+        
+        if(basePairPosition > 0){
+            res.x = basePairPosition-1;
+            res.y = res.x;
+        } else {
+            res.x = nBasisPairs+basePairPosition;
+            res.y = res.x;
+        }
+
     } else {
-        res.x = nBasisPairs+basePairPosition;
-        res.y = nBasis-1-res.x;
+        sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
+                                          "Invalid selected model:%s",model.c_str());
     }
 
     return res;
@@ -45,7 +63,8 @@ std::vector<int> basePair2id(std::shared_ptr<uammd::ParticleData> pd,
                              std::shared_ptr<uammd::System> sys,
                              std::shared_ptr<uammd::ParticleGroup> simIdGroup,
                              std::vector<std::string>& types,
-                             int basePairPosition){
+                             int basePairPosition,
+                             std::string model){
 
     std::vector<int> idSet;
 
@@ -56,7 +75,8 @@ std::vector<int> basePair2id(std::shared_ptr<uammd::ParticleData> pd,
         
     auto groupIndex = simIdGroup->getIndexIterator(uammd::access::location::cpu);
         
-    int len=1;
+    //Compute nBasis
+    int nBasis=1;
     int basis_prev = res[groupIndex[0]];
     for(int i=0;i<simIdGroup->getNumberParticles();i++){
         int index = groupIndex[i];
@@ -65,13 +85,25 @@ std::vector<int> basePair2id(std::shared_ptr<uammd::ParticleData> pd,
 
         if(basis != basis_prev){
             basis_prev=basis;
-            len++;
+            nBasis++;
         }
     }
 
-    int2 b1 = basePair2res(basePairPosition,
-                           len, 
-                           sys);
+    int2 b1;
+    if(model == "MADna"){
+        b1 = basePair2res(basePairPosition,
+                          nBasis, 
+                          model,
+                          sys);
+    } else if (model == "WLC"){
+        b1 = basePair2res(basePairPosition,
+                          nBasis*2, //Fow WLC nBasis == nBasisPairs
+                          model,
+                          sys);
+    } else {
+        sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
+                                          "Invalid selected model:%s",model.c_str());
+    }
 
     int b11 = b1.x;
     int b12 = b1.y;

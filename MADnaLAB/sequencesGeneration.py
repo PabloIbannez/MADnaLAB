@@ -98,48 +98,85 @@ def removeTopologiesFromHashedSequences(hashedSequences):
         os.system('rm '+hsh+'.coord')
         os.system('rm '+hsh+'.top')
 
-def generateMADnaTopologiesFromHashedSequences(hashedSequences):
+def generateMADnaTopologiesFromCONFAndHashedSequences(conf,hashedSequences):
 
     for seq,hsh in hashedSequences.items():
         command = 'python {:} {:} {:} {:}'.format(CREATE_MOLECULE_PATH, seq, hsh + '.coord', hsh + '.top')
         os.system(command)
 
-def applyModeFromCONFToMADnaTopologiesGeneratedFromHashedSequences(conf,hashedSequences):
+def generateWLCTopologiesFromCONFAndHashedSequences(conf,hashedSequences):
+
+    parameters = conf['MAIN']['model']['parameters']
+
+    mass = parameters["M"]
+    b  = parameters["b"]
+    Kb = parameters["Kb"]
+    Ka = parameters["Ka"]
     
-    if 'mode' in conf['SEQUENCES']:
+    radius = b*0.5
+    charge = 0.0
+
+    for seq,hsh in hashedSequences.items():
+        with open(hsh+".top","w") as f:
+            f.write("[TYPES]\n")
+            f.write("{:} {:} {:} {:}\n".format("A",mass,radius,charge))
+            
+            seqLen = len(seq)
+            f.write("[STRUCTURE]\n")
+            for i in range(seqLen):
+                f.write("{:} {:} {:} {:} {:}\n".format(i,"A",i,0,0))
+            
+            f.write("[BONDS]\n")
+            for i in range(seqLen-1):
+                f.write("{:} {:} {:} {:}\n".format(i,i+1,b,Kb))
+            
+            f.write("[ANGLES]\n")
+            for i in range(seqLen-2):
+                f.write("{:} {:} {:} {:}\n".format(i,i+1,i+2,Ka))
         
-        mode = conf['SEQUENCES']['mode']
+        with open(hsh+".coord","w") as f:
+            for i in range(seqLen):
+                f.write("{:} {:} {:} {:}\n".format(i,0.0,0.0,i*b))
+ 
 
-        if mode.split()[0] == 'basic':
-            pass
-        if mode.kplit()[0] == 'fast': #(TODO)
-
-            for hsh in hashedSequences.values():
-
-                top = Topology(hsh + '.coord', hsh + '.top')
-
-                nBasis = set()
-                for s in top.propertiesLoaded['STRUCTURE']:
-                    nBasis.add(s[2])
-
-                nBasisPairs = len(nBasis) // 2
-
-                phosphateIndexPair = []
-
-                for struct in top.propertiesLoaded['STRUCTURE']:
-                    
-                    index, tp, res, chain, mol, sim = struct
-                    
-                    basisPairIndex = res2basisPair(res, nBasisPairs)
-                    
-                    if tp == 'P':
-                        phosphateIndexPair.append([index, basisPairIndex])
-
-                    sys.exit(0)
+#def applyModeFromCONFToMADnaTopologiesGeneratedFromHashedSequences(conf,hashedSequences):
+#
+#    return
+#    
+#    #if 'mode' in conf['SEQUENCES']:
+#    #    
+#    #    mode = conf['SEQUENCES']['mode']
+#
+#    #    if mode.split()[0] == 'basic':
+#    #        pass
+#    #    if mode.kplit()[0] == 'fast': #(TODO)
+#
+#    #        for hsh in hashedSequences.values():
+#
+#    #            top = Topology(hsh + '.coord', hsh + '.top')
+#
+#    #            nBasis = set()
+#    #            for s in top.propertiesLoaded['STRUCTURE']:
+#    #                nBasis.add(s[2])
+#
+#    #            nBasisPairs = len(nBasis) // 2
+#
+#    #            phosphateIndexPair = []
+#
+#    #            for struct in top.propertiesLoaded['STRUCTURE']:
+#    #                
+#    #                index, tp, res, chain, mol, sim = struct
+#    #                
+#    #                basisPairIndex = res2basisPair(res, nBasisPairs)
+#    #                
+#    #                if tp == 'P':
+#    #                    phosphateIndexPair.append([index, basisPairIndex])
+#
+#    #                sys.exit(0)
 
 def applyTransformationsFromCONFToTopologiesGeneratedFromHashedSequences(conf,hashedSequences):
 
-    model = conf['MAIN']['modelName']
+    model = conf['MAIN']['model']['name']
 
     if 'SEQUENCES' in conf:
         if 'transformations' in conf['SEQUENCES']:
@@ -226,7 +263,7 @@ def generateTopologyFromSimulationPoolMergingFromHashedSequences(simulationPool,
         top2.setSimId(simulationPool[1]['simId'])
 
         merging2File(top1, top2, topologyPath, 'none')
-        for i, s in enumerate(tqdm(simulationPool)):
+        for i, s in enumerate(simulationPool):
             if i < 2:
                 pass
             else:
