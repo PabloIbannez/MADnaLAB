@@ -1,6 +1,8 @@
 import os
 import sys
 
+import json
+
 import libconf
 
 from tqdm import tqdm
@@ -37,6 +39,9 @@ for seq in sequences.keys():
                                    'filePath':seq+"/"+str(f)
                                    })
             simId+=1
+
+with open("simulationPool.json", "w") as f:
+    json.dump(simulationPool,f)
 
 simulationPoolList = splitSimulationPoolAccordingToEntry(simulationPool,"alias")
 
