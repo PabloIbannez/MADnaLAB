@@ -2,6 +2,7 @@ import numpy as np
 
 from Topology import *
 
+from MADnaLAB import *
 from MADnaLAB.geometric import *
 from MADnaLAB.basePairs import *
 
@@ -58,6 +59,11 @@ def setUpModificationsFromSimulationPool(simulationPool,OPTIONS):
                 addedModToPool.add(mod)
             if mod.startswith('constraints'):
                 addedModToPool.add(mod)
+
+    for mod in addedModToPool:
+        if mod not in AVAILABLE_MODIFICATIONS:
+            print("[ERROR] Modification:",mod,"is not avaible")
+            sys.exit(0)
 
     simulationSetName   = OPTIONS["simulationSetName"]
     simulationSetFolder = OPTIONS["simulationSetFolder"]
@@ -124,10 +130,6 @@ def setUpModificationsFromSimulationPool(simulationPool,OPTIONS):
                                                                                   getBaseType(info), 
                                                                                   info['basePair'], 
                                                                                   info['K'][0], info['K'][1], info['K'][2]))
-
-                else:
-                    print('[ERROR] Modification', mod, 'is not implemented')
-                    sys.exit(0)
         
         modFile.close()
 

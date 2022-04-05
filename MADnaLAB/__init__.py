@@ -5,6 +5,13 @@ CREATE_MOLECULE_PATH = os.getenv('UAMMDPATH') + '/extensions/structured/Tools/MA
 SEQ_COMPULSORY_INFO     = ["alias","seq","copies"]
 SIMPOOL_COMPULSORY_INFO = ["alias","seq","simId","filePath"]
 
+AVAILABLE_MODIFICATIONS = ["externalForceBtwCOM",
+                           "externalForce",
+                           "externalTorque",
+                           "constraintsDistanceBtwCOM",
+                           "constraintsPositionOfCOM",
+                           "constraintsPositionOfBeads"]
+
 DEBYE_FACTOR = 4.0
 CUTOFF_VERLET_DIFF = 5.0
 
