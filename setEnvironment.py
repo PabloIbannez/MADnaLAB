@@ -21,7 +21,7 @@ export = []
 
 export.append("export PYTHONPATH=\"${PYTHONPATH}:")
 
-export[0]+=str(MADnaLAB_path)+"/src:"
+export[0]+=str(MADnaLAB_path)+":"
 export[0]+=TOP_path
 export[0]+="\""
 
