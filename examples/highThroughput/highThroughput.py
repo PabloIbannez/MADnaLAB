@@ -1,11 +1,11 @@
 import sys
 
-import random
+from MADnaLAB.utils import *
+from MADnaLAB.sequencesGeneration import *
+from MADnaLAB.simulationPool import *
+from MADnaLAB.simulationSets import *
 
-import MADnaLAB.utils
-import MADnaLAB.sequencesGeneration
-import MADnaLAB.simulationPool
-import MADnaLAB.simulationSets
+simSetMaxSize = 10000
 
 seqListFile = "seq.list"
 
@@ -14,26 +14,7 @@ forcesTorques = [[2.0,1.0],[2.0,50.0],[2.0,100.0]]
 
 K = 100.0
 
-nCopies = 2
-
-seqLength  = 40
-nSequences = 10
-
-seed = 123456789
-
-with open(seqListFile,"w") as f:
-    
-    random.seed(seed)            
-    
-    B = ["A","T","C","G"]
-    
-    aliasIndex=0
-    for n in range(nSequences):
-        seq = ""
-        for l in range(seqLength):
-            seq = seq + random.choice(B)
-        f.write("{:} {:}\n".format("rnd_"+str(aliasIndex),seq))
-        aliasIndex+=1
+nCopies = 1
 
 sequenceList = []
 with open(seqListFile,"r") as f:
@@ -54,7 +35,7 @@ for seq in sequenceList:
                                    'seq':seq['seq'],
                                    'simId':simId,
                                    'externalForceBtwCOM': [{'force': f, 'pairType': 'S', 'basePair1': 2, 'basePair2': -2}],
-                                   'filePath':seq['alias']+"/"+str(f)
+                                   'filePath':seq['alias']+"/f"+str(f)
                                    })
             simId+=1
     
@@ -67,12 +48,12 @@ for seq in sequenceList:
                                    'externalForce': [{'force': [0.0,0.0,f], 'pairType': 'S', 'basePair': 2}],
                                    'externalTorque': [{'torque': [0.0,0.0,t], 'pairType': 'All', 'basePair': 2}],
                                    'constraintsPositionOfBeads': [{'K': [K, K, K], 'pairType': 'All', 'basePair': -2}],
-                                   'filePath':seq['alias']+"/"+str(f)+"_"+str(t)
+                                   'filePath':seq['alias']+"/f"+str(f)+"_t"+str(t)
                                    })
             simId+=1
 
 
-simPoolSet = MADnaLAB.simulationPool.splitSimulationPoolAccordingToMaxNumberOfBasePairs(simulationPool,int(sys.argv[1]))
+simPoolSet = splitSimulationPoolAccordingToMaxNumberOfBasePairs(simulationPool,simSetMaxSize)
 
-cfg = MADnaLAB.utils.loadCONF("highThroughput.cfg")
-MADnaLAB.simulationSets.generateSimulationSetsFromListOfSimulationPoolUsingMADnaModel(cfg,simPoolSet)
+cfg = loadCONF("highThroughput.cfg")
+generateSimulationSetsFromListOfSimulationPool(cfg,simPoolSet)
