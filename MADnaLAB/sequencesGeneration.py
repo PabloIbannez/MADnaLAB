@@ -235,8 +235,49 @@ def applyTransformationsFromCONFToTopologiesGeneratedFromHashedSequences(conf,ha
                         rotAxis = rotAxis / np.sqrt(np.sum(np.asarray(rotAxis) ** 2))
 
                         rotateStructure(rotAxis, angle, top)
-                        comAll = computeCenterOfMass(allIndices, top)
+                        
+                        for i in allIndices:
+                            pos = np.asarray([float(p) for p in top.coordLoaded[i][1].split()])
+                            pos = pos + comAll
 
+                            pNew = [i, '{:.4f} {:.4f} {:.4f}'.format(pos[0], pos[1], pos[2])]
+
+                            top.coordLoaded[i] = pNew.copy()
+
+                        top.write(hsh)
+                
+                elif trans == 'moveBasePairCOMtoPosition':
+
+                    comFinalPos = conf['SEQUENCES']['transformations']['moveBasePairCOMtoPosition']['position']
+                    bp          = conf['SEQUENCES']['transformations']['moveBasePairCOMtoPosition']['basePair']
+
+                    for seq,hsh in hashedSequences.items():
+
+                        top = Topology(hsh + '.coord', hsh + '.top')
+
+                        sqLen = len(seq)
+                        resS  = pairBase2res(model, bp, sqLen)
+
+                        allIndices = []
+                        bpIndices  = []
+
+                        for struct in top.propertiesLoaded['STRUCTURE']:
+                            
+                            index, tp, res, chain, mol, sim = struct
+                            allIndices.append(index)
+                            if res in resS:
+                                bpIndices.append(index)
+
+                        com = computeCenterOfMass(bpIndices, top)
+
+                        for i in allIndices:
+                            pos = np.asarray([float(p) for p in top.coordLoaded[i][1].split()])
+                            pos = pos - (com - comFinalPos)
+
+                            pNew = [i, '{:.4f} {:.4f} {:.4f}'.format(pos[0], pos[1], pos[2])]
+
+                            top.coordLoaded[i] = pNew.copy()
+                        
                         top.write(hsh)
 
                 else:
