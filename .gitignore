@@ -10,7 +10,8 @@
 ### Above combination will ignore all files without extension ###
 
 # Ignore `bin` dir
-bin/uammdMADnaLAB
+bin/MADnaLAB
 
 # Ignore pycache dir
 src/__pycache__/*
+MADnaLAB/__pycache__/*

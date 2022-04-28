@@ -34,6 +34,7 @@ std::map<int,std::vector<typename infoType::info>> getInfoList(std::shared_ptr<u
 
     std::map<int,std::vector<typename infoType::info>> infoList;
     std::string line;
+
     while(std::getline(inFile,line)){
         std::stringstream ss(line);
         
@@ -41,6 +42,7 @@ std::map<int,std::vector<typename infoType::info>> getInfoList(std::shared_ptr<u
 
         infoList[infoBuffer.simId].push_back(infoBuffer);
     }
+
     return infoList;
 }
 
@@ -60,9 +62,7 @@ setInfo getSet2id(std::shared_ptr<uammd::System>       sys,
     for(auto& info : infoList){
 
         if(info.second.size() > infoIndex){
-            std::vector<int> bp_ids =  basePair2id(pd,
-                                                   top,
-                                                   sys,
+            std::vector<int> bp_ids =  basePair2id(pd,top,sys,
                                                    simGroups[info.second[infoIndex].simId],
                                                    getBasePairTypeComponents(info.second[infoIndex].type,sys),
                                                    info.second[infoIndex].bp[bpIndex],
@@ -74,7 +74,7 @@ setInfo getSet2id(std::shared_ptr<uammd::System>       sys,
                 sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
                                                   "Set size has to be equal for all base pairs");
             }
-
+            
             set2id.insert(set2id.end(),bp_ids.begin(),bp_ids.end());
         }
     }

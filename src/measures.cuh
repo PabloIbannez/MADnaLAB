@@ -15,6 +15,8 @@ class MeasuresList: public SimulationStep{
         
         std::shared_ptr<SimulationType> sim;
 
+        bool append;
+
     public:
         
         MeasuresList(std::shared_ptr<uammd::System>       sys,
@@ -24,12 +26,14 @@ class MeasuresList: public SimulationStep{
                      std::map<int,std::shared_ptr<uammd::ParticleGroup>>& simGroups,
                      std::map<int,std::string> simId2folder,
                      std::vector<std::string> measuresList,
-                     std::shared_ptr<SimulationType> sim):SimulationStep(sys,pd,pg,"Measures",interval),
-                                                          simGroups(simGroups),
-                                                          simId2folder(simId2folder),
-                                                          measuresList(measuresList),
-                                                          sim(sim),
-                                                          simulationTime(0.0){
+                     std::shared_ptr<SimulationType> sim,
+                     bool append):SimulationStep(sys,pd,pg,"Measures",interval),
+                                                 simGroups(simGroups),
+                                                 simId2folder(simId2folder),
+                                                 measuresList(measuresList),
+                                                 sim(sim),
+                                                 simulationTime(0.0),
+                                                 append(append){
             for(auto pgs : simGroups){    
                 
                 auto groupIndex  = pgs.second->getIndexIterator(uammd::access::location::cpu);
@@ -37,35 +41,54 @@ class MeasuresList: public SimulationStep{
                 auto simId = pd->getSimulationId(uammd::access::location::cpu,uammd::access::mode::read);
                 int  s = simId[groupIndex[0]];
 
-                measuresFiles.emplace(s,std::ofstream(simId2folder[s]+"/measures_"+std::to_string(s)+".dat"));
-            
-                measuresFiles[s] << "# step time ";
+                if(!append){
+                    measuresFiles.emplace(s,std::ofstream(simId2folder[s]+"/measures_"+std::to_string(s)+".dat"));
 
-                for(std::string m : measuresList){
-                    if        (m == "temperature"){
-                        measuresFiles[s] << "temperature ";
-                    } else if (m == "energy"){
-                        for(std::string pot : sim->getForceField()->getComponentsList()){
-                            measuresFiles[s] << pot << " ";
+                    measuresFiles[s] << "# step time ";
+
+                    for(std::string m : measuresList){
+                        if        (m == "temperature"){
+                            measuresFiles[s] << "temperature ";
+                        } else if (m == "energy"){
+                            for(std::string pot : sim->getForceField()->getComponentsList()){
+                                measuresFiles[s] << pot << " ";
+                            }
+                            for(auto& inter : sim->getIntegrator()->getInteractors()){
+                                std::string interactorName = inter->getName();
+
+                                interactorName.erase(std::remove_if(std::begin(interactorName),std::end(interactorName),
+                                                                    [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), std::end(interactorName));
+
+                                measuresFiles[s] << interactorName << " ";
+                            }
+                        } else {
+                            sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
+                                                              "Measure, %s, is not implemented",
+                                                              m.c_str());
                         }
-                        for(auto& inter : sim->getIntegrator()->getInteractors()){
-                            std::string interactorName = inter->getName();
-
-                            interactorName.erase(std::remove_if(std::begin(interactorName),std::end(interactorName),
-                                                                [l = std::locale{}](auto ch) { return std::isspace(ch, l); }), std::end(interactorName));
-
-                            measuresFiles[s] << interactorName << " ";
-                        }
-                    } else {
-                        sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
-                                                          "Measure, %s, is not implemented",
-                                                          m.c_str());
                     }
+                        
+                    measuresFiles[s] << std::endl;
+                } else {
+                    measuresFiles.emplace(s,std::ofstream(simId2folder[s]+"/measures_"+std::to_string(s)+".dat",std::ios_base::app));
                 }
-                    
-                measuresFiles[s] << std::endl;
             }
         }
+        
+        MeasuresList(std::shared_ptr<uammd::System>       sys,
+                     std::shared_ptr<uammd::ParticleData>  pd,
+                     std::shared_ptr<uammd::ParticleGroup> pg,
+                     int interval,
+                     std::map<int,std::shared_ptr<uammd::ParticleGroup>>& simGroups,
+                     std::map<int,std::string> simId2folder,
+                     std::vector<std::string> measuresList,
+                     std::shared_ptr<SimulationType> sim):MeasuresList(sys,pd,pg,
+                                                                       interval,
+                                                                       simGroups,
+                                                                       simId2folder,
+                                                                       measuresList,
+                                                                       sim,
+                                                                       false){};
 
         void init(cudaStream_t st) override{}
 

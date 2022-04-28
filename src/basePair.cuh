@@ -58,6 +58,7 @@ int2 basePair2res(int basePairPosition,
     return res;
 }
 
+
 std::vector<int> basePair2id(std::shared_ptr<uammd::ParticleData> pd,
                              std::shared_ptr<ff::Topology> top,
                              std::shared_ptr<uammd::System> sys,
@@ -128,6 +129,28 @@ std::vector<int> basePair2id(std::shared_ptr<uammd::ParticleData> pd,
         }
     }
 
+    return idSet;
+}
+
+std::vector<int> basePair2id(std::shared_ptr<uammd::ParticleData> pd,
+                             std::shared_ptr<ff::Topology> top,
+                             std::shared_ptr<uammd::System> sys,
+                             std::shared_ptr<uammd::ParticleGroup> simIdGroup,
+                             std::vector<std::string>& types,
+                             std::vector<int>& basePairPosition,
+                             std::string model){
+    
+    std::vector<int> idSet;
+
+    for(int bpp : basePairPosition){
+        auto idSetBuffer = basePair2id(pd,top,sys,
+                                       simIdGroup,
+                                       types,bpp,
+                                       model);
+
+        idSet.insert(idSet.end(),idSetBuffer.begin(),idSetBuffer.end());
+    }
+    
     return idSet;
 }
 

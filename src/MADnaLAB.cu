@@ -18,13 +18,49 @@ int main(int argc, char** argv){
 
     auto sys = std::make_shared<uammd::System>();
     
-    //ullint seed = 0xf31337Bada55D00dULL^time(NULL);
-    ullint seed = 0xf31337Bada55D00dULL;
-    sys->rng().setSeed(seed);
-    
     uammd::InputFile in(argv[1]);
 
+    bool loadFromBackup = false;
+    if(in.getOption("loadFromBackup",uammd::InputFile::Optional)){
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Loading from backup...");
+        loadFromBackup = true;
+    }
+    std::map<std::string,std::string> backupInfo;
+    
+    ullint seed;
+    if(in.getOption("seed",uammd::InputFile::Optional)){
+        seed = std::atoi(in.getOption("seed",uammd::InputFile::Optional).str().c_str()); 
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Reading seed from input file, current seed:%lli",seed);
+    } else {
+        seed = 0xf31337Bada55D00dULL^time(NULL);
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Generating seed using time, current seed:%lli",seed);
+    }
+    sys->rng().setSeed(seed);
+
+    std::string simulationSetFolder = in.getOption("simulationSetFolder",uammd::InputFile::Required).str();
+    sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                     "Simulation folder: %s",simulationSetFolder.c_str());
+
     std::shared_ptr<SIM> sim = std::make_shared<SIM>(sys,in);
+
+    if(loadFromBackup){
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Loading particle data from backup...");
+        
+        sim->loadParticleBuffer(simulationSetFolder+"/backup.back");
+        sim->updateParticleData(true);
+    
+        int initStep;
+        in.getOption("initStep",uammd::InputFile::Required)>>initStep;
+
+        sim->setStep(initStep);
+        
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Starting from step:%i",initStep);
+    }
 
     auto top = sim->getTopology();
     auto pd  = sim->getParticleData();
@@ -45,9 +81,7 @@ int main(int argc, char** argv){
             sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
                                               "Selected model: %s, is not implemented",model.c_str());
         }
-
     }
-
         
     std::map<int,std::shared_ptr<uammd::ParticleGroup>> simGroups;
     {
@@ -107,6 +141,53 @@ int main(int argc, char** argv){
             WriteStep<ff::Units>::Parameters param = paramBase;
             param.outPutFilePath = simId2folder[s]+"/"+paramBase.outPutFilePath+"_"+std::to_string(s);
             
+            if(loadFromBackup){
+                if(paramBase.outPutFormat == "lammpstrj"){
+                    int initStep;
+                    uammd::real dt;
+                    
+                    in.getOption("initStep",uammd::InputFile::Required)>>initStep;
+                    in.getOption("dt",uammd::InputFile::Required)>>dt;
+                    
+                    uammd::real backupTime = dt*initStep;
+                    
+                    std::string prevTrajName = param.outPutFilePath + "."+
+                                               paramBase.outPutFormat;
+                    std::ifstream prevTraj(prevTrajName);
+                    
+                    std::string tmpTrajName = simId2folder[s]+"/tmpTraj."+paramBase.outPutFormat;
+                    std::ofstream tmpTraj(tmpTrajName);
+
+                    std::string line;
+                    while (std::getline(prevTraj, line))
+                    {
+                        std::istringstream ss(line);
+
+                        if(line.find("TIMESTEP") != std::string::npos){
+                            std::getline(prevTraj, line);
+                            uammd::real fileTime = std::atof(line.c_str());
+
+                            if(fileTime>backupTime){break;}
+                            else{
+                                tmpTraj << "ITEM: TIMESTEP" << std::endl;
+                            }
+                        }
+                        tmpTraj << line << std::endl;
+                    }
+
+                    std::filesystem::copy(tmpTrajName, prevTrajName,
+                                          std::filesystem::copy_options::overwrite_existing);
+                    std::filesystem::remove(tmpTrajName);
+
+                } else {
+                    sys->log<uammd::System::ERROR>("[MADnaLAB] "
+                                                   "Current output format:%s, can not be fixed for backup. "
+                                                   "Some frames of the previous simulations could be present in the output file !!!",
+                                                   paramBase.outPutFormat.c_str());
+                }
+            }
+
+            param.append = loadFromBackup;
             std::shared_ptr<WriteStep<ff::Units>> wStep = std::make_shared<WriteStep<ff::Units>>(sys,
                                                                                                  pd,
                                                                                                  pg.second,
@@ -115,12 +196,38 @@ int main(int argc, char** argv){
 
             wStep->setPBC(false);
             sim->addSimulationStep(wStep);
+    
         }
+    }
+
+    //Backup
+    std::shared_ptr<WriteStep<ff::Units>> backupStep;
+    {
+        WriteStep<ff::Units>::Parameters param;
+        param.outPutFormat = "back";
+
+        int interval = std::stoi(in.getOption("nStepsBackupInterval",uammd::InputFile::Required).str());
+
+        auto groupIndex  = pg->getIndexIterator(uammd::access::location::cpu);
+        
+        param.outPutFilePath = simulationSetFolder+"/backup";
+        
+        backupStep = std::make_shared<WriteStep<ff::Units>>(sys,
+                                                            pd,
+                                                            pg,
+                                                            interval,
+                                                            param);
+
+        backupStep->setPBC(false);
+        sim->addSimulationStep(backupStep);
+
+        backupStep->tryApplyStep(sim->getStep(),0,true);
     }
 
     //External force beteew centers of mass
     std::string name = "externalForceBtwCOM";
-    if(in.getOption(name+"Active",uammd::InputFile::Optional)){
+    bool externalForceBtwCOMActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
+    if(externalForceBtwCOMActive){
         
         sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
                                          "Detected %s ...",name.c_str());
@@ -133,18 +240,30 @@ int main(int argc, char** argv){
             struct info{
                 int simId;
                 std::string type;
-                int bp[2];
+                std::vector<std::vector<int>> bp;
                 uammd::real force;
             };
         
             static info getInfo(std::stringstream& ss){
+
+                int n1;
+                int n2;
+
                 info infoBuffer;
+                infoBuffer.bp.resize(2);
 
                 ss >> infoBuffer.simId >>  
-                      infoBuffer.type  >>
-                      infoBuffer.bp[0] >> 
-                      infoBuffer.bp[1] >> 
-                      infoBuffer.force;
+                      infoBuffer.type;
+
+                ss >> n1;
+                infoBuffer.bp[0].resize(n1);
+                for(uint i=0;i<n1;i++){ss >> infoBuffer.bp[0][i];}
+                
+                ss >> n2;
+                infoBuffer.bp[1].resize(n2);
+                for(uint i=0;i<n2;i++){ss >> infoBuffer.bp[1][i];}
+
+                ss >> infoBuffer.force;
 
                 return infoBuffer;
             }
@@ -194,7 +313,8 @@ int main(int argc, char** argv){
     
     //External force
     name = "externalForce";
-    if(in.getOption(name+"Active",uammd::InputFile::Optional)){
+    bool externalForceActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
+    if(externalForceActive){
         
         sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
                                          "Detected %s ...",name.c_str());
@@ -207,20 +327,28 @@ int main(int argc, char** argv){
             struct info{
                 int simId;
                 std::string type;
-                int bp[1];
+                std::vector<std::vector<int>> bp;
                 uammd::real3 force;
             };
         
             static info getInfo(std::stringstream& ss){
+                
+                int n;
+
                 info infoBuffer;
+                infoBuffer.bp.resize(1);
 
                 ss >> infoBuffer.simId >>  
-                      infoBuffer.type  >>
-                      infoBuffer.bp[0] >> 
-                      infoBuffer.force.x >> 
+                      infoBuffer.type;
+
+                ss >> n;
+                infoBuffer.bp[0].resize(n);
+                for(uint i=0;i<n;i++){ss >> infoBuffer.bp[0][i];}
+                
+                ss >> infoBuffer.force.x >> 
                       infoBuffer.force.y >> 
                       infoBuffer.force.z;
-                
+
                 return infoBuffer;
             }
         };
@@ -268,7 +396,8 @@ int main(int argc, char** argv){
 
     //External torque
     name = "externalTorque";
-    if(in.getOption(name+"Active",uammd::InputFile::Optional)){
+    bool externalTorqueActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
+    if(externalTorqueActive){
         
         sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
                                          "Detected %s ...",name.c_str());
@@ -281,17 +410,25 @@ int main(int argc, char** argv){
             struct info{
                 int simId;
                 std::string type;
-                int bp[1];
+                std::vector<std::vector<int>> bp;
                 uammd::real3 torque;
             };
         
             static info getInfo(std::stringstream& ss){
+                
+                int n;
+
                 info infoBuffer;
+                infoBuffer.bp.resize(1);
 
                 ss >> infoBuffer.simId >>  
-                      infoBuffer.type  >>
-                      infoBuffer.bp[0] >> 
-                      infoBuffer.torque.x >> 
+                      infoBuffer.type;
+
+                ss >> n;
+                infoBuffer.bp[0].resize(n);
+                for(uint i=0;i<n;i++){ss >> infoBuffer.bp[0][i];}
+                
+                ss >> infoBuffer.torque.x >> 
                       infoBuffer.torque.y >> 
                       infoBuffer.torque.z;
 
@@ -338,13 +475,14 @@ int main(int argc, char** argv){
             
             sim->addInteractor(externalTorqueInteractor);
         }
-    } 
+    }
     
     //Constraints
 
     //Constraint distance beteew centers of mass
     name = "constraintsDistanceBtwCOM";
-    if(in.getOption(name+"Active",uammd::InputFile::Optional)){
+    bool constraintsDistanceBtwCOMActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
+    if(constraintsDistanceBtwCOMActive){
         
         std::string filePath;
         in.getOption(name+"FilePath",uammd::InputFile::Required) >> filePath;
@@ -354,20 +492,32 @@ int main(int argc, char** argv){
             struct info{
                 int simId;
                 std::string type;
-                int bp[2];
+                std::vector<std::vector<int>> bp;
                 uammd::real r0;
                 uammd::real K;
             };
         
             static info getInfo(std::stringstream& ss){
+
+                int n1;
+                int n2;
+
                 info infoBuffer;
+                infoBuffer.bp.resize(2);
 
                 ss >> infoBuffer.simId >>  
-                      infoBuffer.type  >>
-                      infoBuffer.bp[0] >> 
-                      infoBuffer.bp[1] >> 
-                      infoBuffer.r0 >> 
-                      infoBuffer.K;
+                      infoBuffer.type;
+
+                ss >> n1;
+                infoBuffer.bp[0].resize(n1);
+                for(uint i=0;i<n1;i++){ss >> infoBuffer.bp[0][i];}
+                
+                ss >> n2;
+                infoBuffer.bp[1].resize(n2);
+                for(uint i=0;i<n2;i++){ss >> infoBuffer.bp[1][i];}
+
+                ss >> infoBuffer.r0;
+                ss >> infoBuffer.K;
 
                 return infoBuffer;
             }
@@ -389,7 +539,7 @@ int main(int argc, char** argv){
                 }
             }
 
-            setInfo sI1 = getSet2id<constraintsDistanceBtwCOM>(sys,pd,simGroups,top,infoList,i,0,model);;
+            setInfo sI1 = getSet2id<constraintsDistanceBtwCOM>(sys,pd,simGroups,top,infoList,i,0,model);
             setInfo sI2 = getSet2id<constraintsDistanceBtwCOM>(sys,pd,simGroups,top,infoList,i,1,model);
 
             thrust::host_vector<uammd::real> r0;
@@ -418,29 +568,44 @@ int main(int argc, char** argv){
 
     //Constraint position of center of mass
     name = "constraintsPositionOfCOM";
-    if(in.getOption(name+"Active",uammd::InputFile::Optional)){
+    bool constraintsPositionOfCOMActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
+    if(constraintsPositionOfCOMActive){
         
         std::string filePath;
         in.getOption(name+"FilePath",uammd::InputFile::Required) >> filePath;
         
         struct constraintsPositionOfCOM{
-            
+           
+
             struct info{
                 int simId;
                 std::string type;
-                int bp[1];
+                std::vector<std::vector<int>> bp;
                 uammd::real3 fixedPoint;
                 uammd::real3 K;
             };
         
             static info getInfo(std::stringstream& ss){
+                
+                int n;
+
                 info infoBuffer;
+                infoBuffer.bp.resize(1);
 
                 ss >> infoBuffer.simId >>  
-                      infoBuffer.type  >>
-                      infoBuffer.bp[0] >> 
-                      infoBuffer.fixedPoint.x >> infoBuffer.fixedPoint.y >> infoBuffer.fixedPoint.z >>
-                      infoBuffer.K.x >> infoBuffer.K.y >> infoBuffer.K.z ;
+                      infoBuffer.type;
+
+                ss >> n;
+                infoBuffer.bp[0].resize(n);
+                for(uint i=0;i<n;i++){ss >> infoBuffer.bp[0][i];}
+                
+                ss >> infoBuffer.fixedPoint.x >> 
+                      infoBuffer.fixedPoint.y >> 
+                      infoBuffer.fixedPoint.z;
+
+                ss >> infoBuffer.K.x >> 
+                      infoBuffer.K.y >> 
+                      infoBuffer.K.z;
 
                 return infoBuffer;
             }
@@ -475,12 +640,12 @@ int main(int argc, char** argv){
 
             std::shared_ptr<Interactor::Sets::HarmonicFixedCOM> constraintsPositionOfCOMInteractor 
             = std::make_shared<Interactor::Sets::HarmonicFixedCOM>(sys,pd,pg,
-                                                                        sI.setSize,
-                                                                        nSets,
-                                                                        sI.set2id,
-                                                                        fixedPoint,
-                                                                        K,
-                                                                        Interactor::Sets::HarmonicFixedCOM::Parameters());
+                                                                       sI.setSize,
+                                                                       nSets,
+                                                                       sI.set2id,
+                                                                       fixedPoint,
+                                                                       K,
+                                                                       Interactor::Sets::HarmonicFixedCOM::Parameters());
             sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
                                              "Added \"%s\" with setSize: %i and nSets: %i",
                                               name.c_str(),sI.setSize,nSets);
@@ -491,7 +656,8 @@ int main(int argc, char** argv){
     
     //Constraint position of beads
     name = "constraintsPositionOfBeads";
-    if(in.getOption(name+"Active",uammd::InputFile::Optional)){
+    bool constraintsPositionOfBeadsActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
+    if(constraintsPositionOfBeadsActive){
         
         std::string filePath;
         in.getOption(name+"FilePath",uammd::InputFile::Required) >> filePath;
@@ -501,23 +667,33 @@ int main(int argc, char** argv){
             struct info{
                 int simId;
                 std::string type;
-                int bp[1];
+                std::vector<std::vector<int>> bp;
                 uammd::real3 K;
             };
         
             static info getInfo(std::stringstream& ss){
+                int n;
+
                 info infoBuffer;
+                infoBuffer.bp.resize(1);
 
                 ss >> infoBuffer.simId >>  
-                      infoBuffer.type  >>
-                      infoBuffer.bp[0] >> 
-                      infoBuffer.K.x >> infoBuffer.K.y >> infoBuffer.K.z ;
+                      infoBuffer.type;
+
+                ss >> n;
+                infoBuffer.bp[0].resize(n);
+                for(uint i=0;i<n;i++){ss >> infoBuffer.bp[0][i];}
+                
+                ss >> infoBuffer.K.x >> 
+                      infoBuffer.K.y >> 
+                      infoBuffer.K.z;
 
                 return infoBuffer;
             }
         };
-        
+    
         using FixedType                 = Potentials::Bond1::HarmonicConst_r0;
+        
         using InteractorHarmonicFixed   = Interactor::BondedInteractor<FixedType,
                                                                        Interactor::BondedInteractor_ns::BondProcessor<FixedType>,
                                                                        Interactor::BondedInteractor_ns::BondReaderFromVector<FixedType>>;
@@ -560,18 +736,42 @@ int main(int argc, char** argv){
                     simId2K[info.second[i].simId] = info.second[i].K;
                 }
             }
-            
-            for(int id : sI.set2id){
-                int index = id2index[id];
+                
+            if(!loadFromBackup){
+                for(int id : sI.set2id){
+                    int index = id2index[id];
 
-                FixedType::Bond bi;
+                    FixedType::Bond bi;
 
-                bi.i = id;
-                bi.bondInfo.K = simId2K[simId[index]];
-                bi.bondInfo.pos = uammd::make_real3(pos[index]);
+                    bi.i = id;
+                    bi.bondInfo.K = simId2K[simId[index]];
+                    bi.bondInfo.pos = uammd::make_real3(pos[index]);
 
-                fixedVector->push_back(bi);
+                    fixedVector->push_back(bi);
+                }
+            } else {
+                for(int id : sI.set2id){
+                    int index = id2index[id];
+
+                    FixedType::Bond bi;
+
+                    bi.i = id;
+                    bi.bondInfo.K = simId2K[simId[index]];
+
+                    in.getOption(std::to_string(id)+"fixedPos",uammd::InputFile::Required) >> bi.bondInfo.pos.x 
+                                                                                           >> bi.bondInfo.pos.y 
+                                                                                           >> bi.bondInfo.pos.z;
+                    
+                    fixedVector->push_back(bi);
+                }
             }
+            
+            for(auto fi : *fixedVector){
+                backupInfo[std::to_string(fi.i)+"fixedPos"]= std::to_string(fi.bondInfo.pos.x) + " " +
+                                                             std::to_string(fi.bondInfo.pos.y) + " " +
+                                                             std::to_string(fi.bondInfo.pos.z);
+            }
+
         }
 
         std::shared_ptr<InteractorHarmonicFixed> constraintsPositionOfBeadsInteractor = std::make_shared<InteractorHarmonicFixed>(sys, pd, pg,
@@ -585,7 +785,10 @@ int main(int argc, char** argv){
 
     //Zplates
     name = "boundaryZPlates";
-    if(in.getOption(name+"Active",uammd::InputFile::Optional)){
+    bool boundaryZPlatesActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
+    
+    std::shared_ptr<CompressiblePlates> boundaryZPlatesInteractor; //Exposed for backup 
+    if(boundaryZPlatesActive){
         
         uammd::real initialPlatesSeparation;
         uammd::real finalPlatesSeparation;
@@ -614,17 +817,29 @@ int main(int argc, char** argv){
         
         par.compressionVelocity = compressionVelocity/ff::Units::TO_INTERNAL_TIME;
         
-        std::shared_ptr<CompressiblePlates> boundaryZPlatesInteractor = std::make_shared<CompressiblePlates>(sys,
-                                                                                                             pd,
-                                                                                                             pg,
-                                                                                                             par);
+        boundaryZPlatesInteractor = std::make_shared<CompressiblePlates>(sys,
+                                                                         pd,
+                                                                         pg,
+                                                                         par);
         
         sim->addInteractor(boundaryZPlatesInteractor);
 
+        if(loadFromBackup){
+
+            uammd::real topPlatePos; 
+            uammd::real bottomPlatePos; 
+
+            in.getOption("topPlatePosition",uammd::InputFile::Required) >> topPlatePos;
+            in.getOption("bottomPlatePosition",uammd::InputFile::Required) >> bottomPlatePos;
+            
+            boundaryZPlatesInteractor->setTopPlatePosition(topPlatePos);
+            boundaryZPlatesInteractor->setBottomPlatePosition(bottomPlatePos);
+        }
     }
 
     //Measures
-    if(in.getOption("measuresActive",uammd::InputFile::Optional)){
+    bool measuresActive = bool(in.getOption("measuresActive",uammd::InputFile::Optional));
+    if(measuresActive){
 
         int nStepsMeasure;
         in.getOption("nStepsMeasure",uammd::InputFile::Required) >> nStepsMeasure;
@@ -637,18 +852,123 @@ int main(int argc, char** argv){
             measuresList.push_back(measure);
         }
         
+        if(loadFromBackup){
+            for(auto pg : simGroups){    
+            
+                auto groupIndex  = pg.second->getIndexIterator(uammd::access::location::cpu);
+                
+                auto simId = pd->getSimulationId(uammd::access::location::cpu,uammd::access::mode::read);
+                int  s = simId[groupIndex[0]];
+
+                int initStep;
+                in.getOption("initStep",uammd::InputFile::Required)>>initStep;
+                
+                std::string prevMeasureName = simId2folder[s]+"/measures_"+std::to_string(s)+".dat";
+                std::ifstream prevMeasure(prevMeasureName);
+                
+                std::string tmpMeasureName = simId2folder[s]+"/tmpMeasure.dat";
+                std::ofstream tmpMeasure(tmpMeasureName);
+
+                std::string line;
+                while (std::getline(prevMeasure, line))
+                {
+                    std::istringstream ss(line);
+
+                    int measureStep;
+                    ss >> measureStep;
+
+                    if(measureStep > initStep){break;}
+
+                    tmpMeasure << line << std::endl;
+                }
+
+                std::filesystem::copy(tmpMeasureName, prevMeasureName,
+                                      std::filesystem::copy_options::overwrite_existing);
+                std::filesystem::remove(tmpMeasureName);
+
+            }
+        }
+
         std::shared_ptr<MeasuresList<SIM>> mStep = std::make_shared<MeasuresList<SIM>>(sys,
                                                                                        pd,
                                                                                        pg,
                                                                                        nStepsMeasure,
                                                                                        simGroups,simId2folder,
                                                                                        measuresList,
-                                                                                       sim);
+                                                                                       sim,
+                                                                                       loadFromBackup);
 
         sim->addSimulationStep(mStep);
     }
 
-    sim->run();
+    //Remove loadFromBackup from input file
+    if(loadFromBackup){
+        std::filesystem::copy(simulationSetFolder+"/options.back", argv[1],
+                              std::filesystem::copy_options::overwrite_existing);
+    }
+        
+    try{
+        if(!loadFromBackup){
+            sim->run();
+        } else {
+            sim->getIntegrator()->init();
+            sim->run(false);
+        }
+    } catch (uammd::exception &e) {
+        
+        sys->log<uammd::System::ERROR>("  [MADnaLAB] "
+                                       "Error detected at simulation step: %u",sim->getStep());
+
+        int errorCode = 1;
+
+        if(loadFromBackup){
+            sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                             "Previous backup detected");
+
+            int initStep;
+            in.getOption("initStep",uammd::InputFile::Required)>>initStep;
+
+            if(initStep == backupStep->getLastStepApplied()){
+                sys->log<uammd::System::WARNING>("[MADnaLAB] "
+                                                 "Previus and current backup points match: %i",initStep);
+                errorCode = 2;
+            } else {
+                sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                                 "Previus and current backup points are different. "
+                                                 "Number of steps between backup points: %i",backupStep->getLastStepApplied()-initStep
+                                                 );
+            }
+        }
+
+        in.~InputFile();
+        
+        std::filesystem::copy(argv[1], simulationSetFolder+"/options.back",
+                              std::filesystem::copy_options::overwrite_existing);
+        
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Writting backup info. Last backup at step: %u",backupStep->getLastStepApplied());
+
+        std::ofstream inOut;
+        inOut.open(argv[1], std::ios_base::app);
+
+        //Write info to input
+        inOut << "loadFromBackup" << std::endl;
+        inOut << "initStep " << backupStep->getLastStepApplied() << std::endl;
+
+        for(auto bckInf : backupInfo){
+            inOut << bckInf.first << " " << bckInf.second << std::endl;
+        }
+        
+        if(boundaryZPlatesActive){
+            inOut << "topPlatePosition "    << boundaryZPlatesInteractor->getTopPlatePosition() << std::endl;
+            inOut << "bottomPlatePosition " << boundaryZPlatesInteractor->getBottomPlatePosition() << std::endl;
+        }
+        
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Exit with error code %i",errorCode);
+
+        std::exit(errorCode);
+    }
 
     return EXIT_SUCCESS;
 }

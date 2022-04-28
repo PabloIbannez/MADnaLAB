@@ -63,7 +63,7 @@ def generateSimulationSetsFromListOfSimulationPoolUsingMADnaModel(conf,simulatio
         
         ########################################################
         
-        generateOutputFoldersFromSimulationPoolAndOptions(simPool,OPT)
+        loadOutputFoldersFromSimulationPoolIntoOptions(simPool,OPT)
         
         ########################################################
 
@@ -119,7 +119,7 @@ def generateSimulationSetsFromListOfSimulationPoolUsingWLCModel(conf,simulationP
         
         ########################################################
         
-        generateOutputFoldersFromSimulationPoolAndOptions(simPool,OPT)
+        loadOutputFoldersFromSimulationPoolIntoOptions(simPool,OPT)
         
         ########################################################
 

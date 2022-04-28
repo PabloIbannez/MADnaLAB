@@ -13,7 +13,7 @@ def res2basePair(model, res, nBasisPairs):
             print("[ERROR] Model:{:}.Invalid res, its value can not be larger "
                    "than the total number of basis ({:}),"
                    "but the value is: {:}".format(model,nBasis, res))
-            sys.exit(0)
+            sys.exit(1)
         if res < nBasisPairs:
             return res + 1
         return nBasis - res
@@ -22,56 +22,78 @@ def res2basePair(model, res, nBasisPairs):
             print("[ERROR] Model:{:}. Invalid res, its value can not be larger "
                    "than the total number of basis pairs({:}),"
                    "but the value is: {:}".format(model,nBasisPairs, res))
-            sys.exit(0)
+            sys.exit(1)
         return res+1
     else:
         print("[ERROR] Model",model,"is not avaible")
-        sys.exit(0)
+        sys.exit(1)
 
 def pairBase2res(model, pairBasePosition, nBasisPairs):
+    
+    if type(pairBasePosition) == list:
+        pass
+    else:
+        pairBasePosition=[pairBasePosition]
+
     if model == "MADna":
-        if pairBasePosition == 0:
+        if 0 in pairBasePosition:
             print("[ERROR] Invalid pair base position,"
                   " it must be different than 0")
-            sys.exit(0)
+            sys.exit(1)
         nBasis = int(nBasisPairs * 2)
-        if abs(pairBasePosition) > nBasisPairs:
-            print("[ERROR] Model:{:}, Invalid pair base position,"
-                  " its absolute value can not be larger"
-                  " than the total number of base pairs"
-                  " ({:}), but the value is: {:}".format(model,nBasisPairs, pairBasePosition))
-            sys.exit(0)
+        for pbp in pairBasePosition:
+            if abs(pbp) > nBasisPairs:
+                print("[ERROR] Model:{:}, Invalid pair base position,"
+                      " its absolute value can not be larger"
+                      " than the total number of base pairs"
+                      " ({:}), but the value is: {:}".format(model,nBasisPairs,pbp))
+                sys.exit(1)
+        
         pairsIndex = []
-        if pairBasePosition > 0:
-            pairsIndex.append(pairBasePosition - 1)
-            pairsIndex.append(nBasis - 1 - pairsIndex[0])
-        else:
-            pairsIndex.append(nBasisPairs + pairBasePosition)
-            pairsIndex.append(nBasis - 1 - pairsIndex[0])
+        for pbp in pairBasePosition:
+            pairsIndexBuffer = []
+            if pbp > 0:
+                pairsIndexBuffer.append(pbp - 1)
+                pairsIndexBuffer.append(nBasis - 1 - pairsIndexBuffer[0])
+            else:
+                pairsIndexBuffer.append(nBasisPairs + pbp)
+                pairsIndexBuffer.append(nBasis - 1 - pairsIndexBuffer[0])
+            pairsIndex.extend(pairsIndexBuffer)
+
         return pairsIndex
     elif model == "WLC":
-        if pairBasePosition == 0:
+        if 0 in pairBasePosition:
             print("[ERROR] Invalid pair base position,"
                   " it must be different than 0")
-            sys.exit(0)
-        if abs(pairBasePosition) > nBasisPairs:
-            print("[ERROR] Model:{:}, Invalid pair base position,"
-                  " its absolute value can not be larger"
-                  " than the total number of base pairs"
-                  " ({:}), but the value is: {:}".format(model,nBasisPairs, pairBasePosition))
-            sys.exit(0)
-        pairsIndex = []
-        if pairBasePosition > 0:
-            pairsIndex.append(pairBasePosition - 1)
-        else:
-            pairsIndex.append(nBasisPairs + pairBasePosition)
-        return pairsIndex
+            sys.exit(1)
+        for pbp in pairBasePosition:
+            if abs(pbp) > nBasisPairs:
+                print("[ERROR] Model:{:}, Invalid pair base position,"
+                      " its absolute value can not be larger"
+                      " than the total number of base pairs"
+                      " ({:}), but the value is: {:}".format(model,nBasisPairs,pbp))
+                sys.exit(1)
 
+        pairsIndex = []
+        for pbp in pairBasePosition:
+            pairsIndexBuffer = []
+            if pbp > 0:
+                pairsIndexBuffer.append(pbp - 1)
+            else:
+                pairsIndexBuffer.append(nBasisPairs + pbp)
+            pairsIndex.extend(pairsIndexBuffer)
+
+        return pairsIndex
     else:
         print("[ERROR] Model",model,"is not avaible")
-        sys.exit(0)
+        sys.exit(1)
 
 def pairBase2index(model, pairBasePosition, top, simId, bTypes):
+
+    if type(pairBasePosition) == list:
+        pass
+    else:
+        pairBasePosition=[pairBasePosition]
     
     simPairsIndex = []
     nBasis = set()
@@ -81,11 +103,11 @@ def pairBase2index(model, pairBasePosition, top, simId, bTypes):
         
     if model == "MADna":
         nBasisPairs = len(nBasis) // 2
-    if model == "WLC":
+    elif model == "WLC":
         nBasisPairs = len(nBasis)
     else:
         print("[ERROR] Model",model,"is not avaible")
-        sys.exit(0)
+        sys.exit(1)
     
     res = pairBase2res(model, pairBasePosition, nBasisPairs)
 

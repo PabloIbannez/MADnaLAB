@@ -93,7 +93,7 @@ def loadSimulationSetInfoIntoOptions(simulationSetName,simulationSetFolder,OPTIO
     OPTIONS["simulationSetName"]   = simulationSetName
     OPTIONS["simulationSetFolder"] = simulationSetFolder
 
-def generateOutputFoldersFromSimulationPoolAndOptions(simulationPool,OPTIONS):
+def loadOutputFoldersFromSimulationPoolIntoOptions(simulationPool,OPTIONS):
 
     OPTIONS["outPutFolders"] = OPTIONS["simulationSetFolder"] + 'filePath_' +  OPTIONS["simulationSetName"] + '.dat'
         
