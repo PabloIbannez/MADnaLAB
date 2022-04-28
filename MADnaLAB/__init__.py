@@ -6,6 +6,7 @@ SEQ_COMPULSORY_INFO     = ["alias","seq","copies"]
 SIMPOOL_COMPULSORY_INFO = ["alias","seq","simId","filePath"]
 
 AVAILABLE_MODIFICATIONS = ["externalForceBtwCOM",
+                           "externalTorqueBtwCOM",
                            "externalForce",
                            "externalTorque",
                            "constraintsDistanceBtwCOM",

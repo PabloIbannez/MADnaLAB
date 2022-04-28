@@ -9,9 +9,9 @@ fscripts="/home/pablo/Desktop/MADnaLAB/examples/test/scripts_benchmark"
 imin=1000
 
 #seqlist="AA AC AG AT CG GG A4GGA4 A4TA4 A8GG A8T DDD DUE G4AAG4 G4CG4 TATA TFBS"
-seqlist="AG AT CG GG AA AC"
-#seqlist="AA"
-handle=4
+#seqlist="AG AT CG GG AA AC"
+seqlist="AA"
+#handle=4
 for sequenza in $seqlist; do 
 	lseq=$(awk '{print length($1)}' $fbase/Simulations/$sequenza/initialization/sequence.dat)
 	i0=$(echo $handle | awk '{print $1+1}')
@@ -253,7 +253,7 @@ for xxx in major_groove_depth major_groove_width minor_groove_depth minor_groove
 	echo "Collect results for $xxx" >&2
 	echo "#sequence nucleotide i simulation error benchmark error" > $fbase/Simulations/Comparison/$xxx
 	for x in $seqlist; do
-		paste $fbase/Simulations/$x/results/$xxx Benchmark/$x/$xxx | grep -v "#" | awk '{print $1,$2,$3,$4,$5,$9,$10}'
+		paste $fbase/Simulations/$x/results/$xxx $fscripts/Benchmark/$x/$xxx | grep -v "#" | awk '{print $1,$2,$3,$4,$5,$9,$10}'
 	done >> $fbase/Simulations/Comparison/$xxx
 done
 
@@ -261,7 +261,7 @@ for xxx in hrise htwist; do
 	echo "Collect results for $xxx" >&2
 	echo "#sequence nucleotide i1 i2 simulation error benchmark error" > $fbase/Simulations/Comparison/$xxx
 	for x in $seqlist; do
-		paste $fbase/Simulations/$x/results/$xxx Benchmark/$x/$xxx | grep -v "#" | awk '{print $1,$2,$3,$4,$5,$6,$11,$12}'
+		paste $fbase/Simulations/$x/results/$xxx $fscripts/Benchmark/$x/$xxx | grep -v "#" | awk '{print $1,$2,$3,$4,$5,$6,$11,$12}'
 	done >> $fbase/Simulations/Comparison/$xxx
 done
 
@@ -269,7 +269,7 @@ for xxx in diameter; do
 	echo "Collect results for $xxx" >&2
 	echo "#sequence simulation error benchmark error" > $fbase/Simulations/Comparison/$xxx
 	for x in $seqlist; do
-		paste $fbase/Simulations/$x/results/$xxx Benchmark/$x/$xxx | awk -v x=$x '{print x,$0}'
+		paste $fbase/Simulations/$x/results/$xxx $fscripts/Benchmark/$x/$xxx | awk -v x=$x '{print x,$0}'
 	done >> $fbase/Simulations/Comparison/$xxx
 done
 
@@ -277,7 +277,7 @@ for xxx in Stilde C g kbeta; do
 	echo "Collect results for $xxx" >&2
 	echo "#sequence simulation error benchmark error" > $fbase/Simulations/Comparison/$xxx
 	for x in $seqlist; do
-		paste <(awk '{print $1, $(NF-1),$NF}' $fbase/Simulations/$x/results/constants) <(awk '{print $(NF-1),$NF}' Benchmark/$x/constants) | grep $xxx | awk -v x=$x '{print x,$2,$3,$4,$5}'
+		paste <(awk '{print $1, $(NF-1),$NF}' $fbase/Simulations/$x/results/constants) <(awk '{print $(NF-1),$NF}' $fscripts/Benchmark/$x/constants) | grep $xxx | awk -v x=$x '{print x,$2,$3,$4,$5}'
 	done >> $fbase/Simulations/Comparison/$xxx
 done
 

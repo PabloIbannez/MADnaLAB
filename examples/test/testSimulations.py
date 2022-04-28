@@ -95,7 +95,7 @@ for simSet, simPool in enumerate(tqdm(simulationPoolList)):
     
     ########################################################
     
-    generateOutputFoldersFromSimulationPoolAndOptions(simPool,OPT)
+    loadOutputFoldersFromSimulationPoolIntoOptions(simPool,OPT)
     
     ########################################################
 

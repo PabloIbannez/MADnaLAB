@@ -311,6 +311,93 @@ int main(int argc, char** argv){
         }
     } 
     
+    //External torque between centers of mass
+    name = "externalTorqueBtwCOM";
+    bool externalTorqueBtwCOMActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
+    if(externalTorqueBtwCOMActive){
+        
+        sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                         "Detected %s ...",name.c_str());
+
+        std::string filePath;
+        in.getOption(name+"FilePath",uammd::InputFile::Required) >> filePath;
+        
+        struct externalTorqueBtwCOM{
+            
+            struct info{
+                int simId;
+                std::string type;
+                std::vector<std::vector<int>> bp;
+                uammd::real torque;
+            };
+        
+            static info getInfo(std::stringstream& ss){
+
+                int n1;
+                int n2;
+
+                info infoBuffer;
+                infoBuffer.bp.resize(2);
+
+                ss >> infoBuffer.simId >>  
+                      infoBuffer.type;
+
+                ss >> n1;
+                infoBuffer.bp[0].resize(n1);
+                for(uint i=0;i<n1;i++){ss >> infoBuffer.bp[0][i];}
+                
+                ss >> n2;
+                infoBuffer.bp[1].resize(n2);
+                for(uint i=0;i<n2;i++){ss >> infoBuffer.bp[1][i];}
+
+                ss >> infoBuffer.torque;
+
+                return infoBuffer;
+            }
+        };
+        
+        auto infoList = getInfoList<externalTorqueBtwCOM>(sys,name,filePath);
+
+        uint maxEntrySize=0;
+        for(auto& info : infoList){
+            maxEntrySize = std::max(maxEntrySize,uint(info.second.size()));
+        }
+
+        for(int i=0;i<maxEntrySize;i++){
+            
+            int nSets = 0;
+            for(auto& info : infoList){
+                if(info.second.size() > i){
+                    nSets++;
+                }
+            }
+
+            setInfo sI1 = getSet2id<externalTorqueBtwCOM>(sys,pd,simGroups,top,infoList,i,0,model);
+            setInfo sI2 = getSet2id<externalTorqueBtwCOM>(sys,pd,simGroups,top,infoList,i,1,model);
+
+            thrust::host_vector<uammd::real> T;
+
+            for(auto& info : infoList){
+                if(info.second.size() > i){
+                    T.push_back(ff::Units::TO_INTERNAL_FORCE*info.second[i].torque);
+                }
+            }
+            
+            std::shared_ptr<Interactor::Sets::ConstantTorqueBtwCOM> externalTorqueBtwCOMInteractor
+            = std::make_shared<Interactor::Sets::ConstantTorqueBtwCOM>(sys,pd,pg,
+                                                                       sI1.setSize,sI2.setSize,
+                                                                       nSets,
+                                                                       sI1.set2id,sI2.set2id,
+                                                                       T,
+                                                                       Interactor::Sets::ConstantTorqueBtwCOM::Parameters());
+             sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
+                                              "Added \"%s\" with setSize1: %i, setSize2: %i and nSets: %i",
+                                               name.c_str(),sI1.setSize,sI2.setSize,nSets);
+          
+            sim->addInteractor(externalTorqueBtwCOMInteractor);
+        }
+    } 
+    
     //External force
     name = "externalForce";
     bool externalForceActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
@@ -479,7 +566,7 @@ int main(int argc, char** argv){
     
     //Constraints
 
-    //Constraint distance beteew centers of mass
+    //Constraint distance between centers of mass
     name = "constraintsDistanceBtwCOM";
     bool constraintsDistanceBtwCOMActive = bool(in.getOption(name+"Active",uammd::InputFile::Optional));
     if(constraintsDistanceBtwCOMActive){

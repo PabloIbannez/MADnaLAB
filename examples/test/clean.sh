@@ -9,3 +9,6 @@ rm -r GG
 
 rm -r MADnaTestSimulationSets  
 rm MADnaTestSimulationSets.dat
+
+rm -r Simulations
+rm simulationPool.json 

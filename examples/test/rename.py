@@ -16,7 +16,8 @@ for sim in tqdm(simulationPool):
     newPath = "Simulations/"+sim["alias"]+"/f"+str(int(sim["externalForceBtwCOM"][0]["force"]))+"/sim"+str((sim["simId"]%nSim)+1)
     os.makedirs(newPath, exist_ok=True)
     new = newPath+"/dump.lammpstrj"
-    os.system("cp "+old+" "+new)
+    #os.system("cp "+old+" "+new)
+    os.system("mv "+old+" "+new)
 
 seqList = {}
 for sim in simulationPool:

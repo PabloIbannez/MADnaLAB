@@ -6,15 +6,15 @@ from MADnaLAB import *
 from MADnaLAB.geometric import *
 from MADnaLAB.basePairs import *
 
-def checkBasePairs(sim,modName,basePairName):
-    addedBasePairs = []
-    for info in sim[modName]:
-        for bp in info[basePairName]:
-            if bp not in addedBasePairs:
-                addedBasePairs.append(bp)
-            else:
-                print('[ERROR] Error processing \"{}\" in \"{}\". Base pair \"{}\" added before.'.format(basePairName,modName,bp))
-                sys.exit(1)
+#def checkBasePairs(sim,modName,basePairName):
+#    addedBasePairs = []
+#    for info in sim[modName]:
+#        for bp in info[basePairName]:
+#            if bp not in addedBasePairs:
+#                addedBasePairs.append(bp)
+#            else:
+#                print('[ERROR] Error processing \"{}\" in \"{}\". Base pair \"{}\" added before.'.format(basePairName,modName,bp))
+#                sys.exit(1)
 
 def basePairToList(sim,modName,basePairName):
     for info in sim[modName]:
@@ -100,10 +100,10 @@ def setUpModificationsFromSimulationPool(simulationPool,OPTIONS):
 
                 if mod == 'externalForceBtwCOM':
                     basePairToList(sim,mod,"basePair1")
-                    checkBasePairs(sim,mod,"basePair1")
+                    #checkBasePairs(sim,mod,"basePair1")
 
                     basePairToList(sim,mod,"basePair2")
-                    checkBasePairs(sim,mod,"basePair2")
+                    #checkBasePairs(sim,mod,"basePair2")
 
                     for info in sim[mod]:
                         baseInfo = str(len(info["basePair1"]))
@@ -116,10 +116,29 @@ def setUpModificationsFromSimulationPool(simulationPool,OPTIONS):
                                                                    getBaseType(info), 
                                                                    baseInfo, 
                                                                    info['force']))
+                
+                if mod == 'externalTorqueBtwCOM':
+                    basePairToList(sim,mod,"basePair1")
+                    #checkBasePairs(sim,mod,"basePair1")
+
+                    basePairToList(sim,mod,"basePair2")
+                    #checkBasePairs(sim,mod,"basePair2")
+
+                    for info in sim[mod]:
+                        baseInfo = str(len(info["basePair1"]))
+                        for i1 in info["basePair1"]:
+                            baseInfo+=" "+str(i1)
+                        baseInfo += " "+str(len(info["basePair2"]))
+                        for i2 in info["basePair2"]:
+                            baseInfo+=" "+str(i2)
+                        modFile.write('{:} {:} {} {:.4f}\n'.format(simId, 
+                                                                   getBaseType(info), 
+                                                                   baseInfo, 
+                                                                   info['torque']))
 
                 elif mod == 'externalForce':
                     basePairToList(sim,mod,"basePair")
-                    checkBasePairs(sim,mod,"basePair")
+                    #checkBasePairs(sim,mod,"basePair")
                     for info in sim[mod]:
                         baseInfo = str(len(info["basePair"]))
                         for i in info["basePair"]:
@@ -131,7 +150,7 @@ def setUpModificationsFromSimulationPool(simulationPool,OPTIONS):
 
                 elif mod == 'externalTorque':
                     basePairToList(sim,mod,"basePair")
-                    checkBasePairs(sim,mod,"basePair")
+                    #checkBasePairs(sim,mod,"basePair")
                     for info in sim[mod]:
                         baseInfo = str(len(info["basePair"]))
                         for i in info["basePair"]:
@@ -143,10 +162,10 @@ def setUpModificationsFromSimulationPool(simulationPool,OPTIONS):
 
                 elif mod == 'constraintsDistanceBtwCOM':
                     basePairToList(sim,mod,"basePair1")
-                    checkBasePairs(sim,mod,"basePair1")
+                    #checkBasePairs(sim,mod,"basePair1")
 
                     basePairToList(sim,mod,"basePair2")
-                    checkBasePairs(sim,mod,"basePair2")
+                    #checkBasePairs(sim,mod,"basePair2")
 
                     for info in sim[mod]:
                         baseInfo = str(len(info["basePair1"]))
@@ -167,7 +186,7 @@ def setUpModificationsFromSimulationPool(simulationPool,OPTIONS):
 
                 elif mod == 'constraintsPositionOfCOM':
                     basePairToList(sim,mod,"basePair")
-                    checkBasePairs(sim,mod,"basePair")
+                    #checkBasePairs(sim,mod,"basePair")
                     for info in sim[mod]:
                         baseInfo = str(len(info["basePair"]))
                         for i in info["basePair"]:
@@ -184,7 +203,7 @@ def setUpModificationsFromSimulationPool(simulationPool,OPTIONS):
 
                 elif mod == 'constraintsPositionOfBeads':
                     basePairToList(sim,mod,"basePair")
-                    checkBasePairs(sim,mod,"basePair")
+                    #checkBasePairs(sim,mod,"basePair")
                     for info in sim[mod]:
                         baseInfo = str(len(info["basePair"]))
                         for i in info["basePair"]:
