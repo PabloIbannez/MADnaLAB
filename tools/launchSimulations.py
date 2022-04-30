@@ -16,7 +16,7 @@ import datetime
 
 ################
 
-gpuIDList = [0]
+gpuIDList = [0,1]
 
 MADnaLAB = os.environ['MADNALABPATH']+"/bin/MADnaLAB"
 
@@ -34,7 +34,7 @@ def signalHandler(sig,frame):
 def associateCPUtoGPU(gpuIDList):
     cpuName = multiprocessing.current_process().name
     try:
-        cpuID = int(cpuID[cpuName.find('-') + 1:]) - 1
+        cpuID = int(cpuName[cpuName.find('-') + 1:]) - 1
     except:
         cpuID = 0 
     gpuID = gpuIDList[cpuID % len(gpuIDList)]
@@ -46,10 +46,10 @@ def runSimulation(options, gpuIDList):
     cudaFlag = 'CUDA_VISIBLE_DEVICES={}'.format(gpuId)
 
     simulationPath = str(pathlib.Path(options).parent)+"/"
-
+    
     fout = open(simulationPath+"out.log","w")
     ferr = open(simulationPath+"err.log","w")
-
+    
     sim = " ".join([cudaFlag, " ".join([MADnaLAB,options])])
     simReturn = subprocess.run(sim, stdout=fout, stderr=ferr, shell=True)
     while(simReturn.returncode == 1):
