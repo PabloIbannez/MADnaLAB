@@ -1057,6 +1057,8 @@ int main(int argc, char** argv){
         std::exit(errorCode);
     }
 
+    sys->finish();
+
     return EXIT_SUCCESS;
 }
 

@@ -11,3 +11,4 @@ rm -r devSimSets
 rm -r rnd_*
 rm -r listseq*
 rm -r devSimulationSets
+rm *.log
