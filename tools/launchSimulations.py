@@ -1,4 +1,5 @@
 import sys,os
+import pathlib
 
 import itertools
 
@@ -44,14 +45,22 @@ def runSimulation(options, gpuIDList):
     gpuId = associateCPUtoGPU(gpuIDList)
     cudaFlag = 'CUDA_VISIBLE_DEVICES={}'.format(gpuId)
 
+    simulationPath = str(pathlib.Path(options).parent)+"/"
+
+    fout = open(simulationPath+"out.log","w")
+    ferr = open(simulationPath+"err.log","w")
+
     sim = " ".join([cudaFlag, " ".join([MADnaLAB,options])])
-    simReturn = subprocess.run(sim, shell=True)
+    simReturn = subprocess.run(sim, stdout=fout, stderr=ferr, shell=True)
     while(simReturn.returncode == 1):
         logging.warning("Simulation {} crashed. Recovering from backup.".format(sim))
-        simReturn = subprocess.run(sim, shell=True)
+        simReturn = subprocess.run(sim, stdout=fout, stderr=ferr, shell=True)
 
     if(simReturn.returncode == 2):
         logging.error("Simulation {} crashed. Recovery is NOT possible.".format(sim))
+
+    fout.close()
+    ferr.close()
 
     return simReturn
 
