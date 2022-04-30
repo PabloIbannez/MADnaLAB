@@ -10,7 +10,7 @@ def generateSimulationSetsFromListOfSimulationPool(conf,simulationPoolList):
 
     model = conf['MAIN']['model']['name']
 
-    if  model == "MADna":
+    if  model == "MADna" or model == "MADnaFast":
         generateSimulationSetsFromListOfSimulationPoolUsingMADnaModel(conf,simulationPoolList)
     elif model == "WLC":
         generateSimulationSetsFromListOfSimulationPoolUsingWLCModel(conf,simulationPoolList)

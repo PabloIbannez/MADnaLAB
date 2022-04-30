@@ -7,7 +7,7 @@ def getBaseType(info):
     return bType
 
 def res2basePair(model, res, nBasisPairs):
-    if model == "MADna":
+    if model == "MADna" or model == "MADnaFast":
         nBasis = int(nBasisPairs * 2)
         if res >= nBasis:
             print("[ERROR] Model:{:}.Invalid res, its value can not be larger "
@@ -35,7 +35,7 @@ def pairBase2res(model, pairBasePosition, nBasisPairs):
     else:
         pairBasePosition=[pairBasePosition]
 
-    if model == "MADna":
+    if model == "MADna" or model == "MADnaFast":
         if 0 in pairBasePosition:
             print("[ERROR] Invalid pair base position,"
                   " it must be different than 0")
@@ -101,7 +101,7 @@ def pairBase2index(model, pairBasePosition, top, simId, bTypes):
         if s[5] == simId:
             nBasis.add(s[2])
         
-    if model == "MADna":
+    if model == "MADna" or model == "MADnaFast":
         nBasisPairs = len(nBasis) // 2
     elif model == "WLC":
         nBasisPairs = len(nBasis)

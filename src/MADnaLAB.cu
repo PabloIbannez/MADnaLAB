@@ -1,11 +1,14 @@
 #include <UAMMDstructured.cuh>
 
+#include "forcefields.cuh"
+
 using namespace uammd::structured;
 
 using ff  = forceField::EMPTY_KCALMOL_A;
 
-using ffMADna = forceField::MADna;
-using ffWLC   = forceField::KratkyPorodModel::KratkyPorodModel<forceField::ForceFieldBase<ff::Units,Types::BASIC>>;
+using ffMADna     = forceField::MADna;
+using ffMADnaFast = forceField::MADnaFast;
+using ffWLC       = forceField::WLC;
 
 using SIM = Simulation<ff,SteepestDescent,LangevinNVT::BBK>;
 
@@ -74,6 +77,9 @@ int main(int argc, char** argv){
                if(model == "MADna"){
             std::shared_ptr<ffMADna> madna = std::make_shared<ffMADna>(sys,pd,pg,in);
             sim->addInteractor(madna);
+        } else if(model == "MADnaFast"){
+            std::shared_ptr<ffMADnaFast> madnafast = std::make_shared<ffMADnaFast>(sys,pd,pg,in);
+            sim->addInteractor(madnafast);
         } else if(model == "WLC"){
             std::shared_ptr<ffWLC> wlc = std::make_shared<ffWLC>(sys,pd,pg,in);
             sim->addInteractor(wlc);

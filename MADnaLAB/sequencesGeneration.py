@@ -1,6 +1,8 @@
 import sys
 import os
 
+import itertools
+
 import random
 
 import hashlib
@@ -50,7 +52,7 @@ def generateSequencesListFromCONF(conf):
                 aliasIndex += 1
         else:
             print('[ERROR] Generating protocol', protocol, ' not implemented')
-            sys.exit(0)
+            sys.exit(1)
     
     print('[INFO] sequences list ...')
     for s in sequencesList:
@@ -64,17 +66,17 @@ def checkSequencesList(sequencesList):
     
     if(type(sequencesList) != list):
         print("[ERROR] Sequences list type has to be \"list\", but current type is:",type(sequencesList))
-        sys.exit(0)
+        sys.exit(1)
     else:
         for seq in sequencesList:
             if(type(seq) != dict):
                 print("[ERROR] Elements of sequences list have to be a \"dict\", but current type is:",type(seq))
-                sys.exit(0)
+                sys.exit(1)
             else:
                 for info in SEQ_COMPULSORY_INFO:
                     if(info not in seq.keys()):
                         print("[ERROR] Info:",info,"is not present for the sequence",seq)
-                        sys.exit(0)
+                        sys.exit(1)
 
 def hashSequencesFromSimulationPool(simulationPool):
 
@@ -87,7 +89,7 @@ def hashSequencesFromSimulationPool(simulationPool):
             for _seq,_hsh in hashedSequences.items():
                 if(hsh==_hsh):
                     print("[ERROR] WTF, hash collision !!!")
-                    sys.exit(0)
+                    sys.exit(1)
             hashedSequences[seq] = hsh
 
     return hashedSequences
@@ -100,9 +102,68 @@ def removeTopologiesFromHashedSequences(hashedSequences):
 
 def generateMADnaTopologiesFromCONFAndHashedSequences(conf,hashedSequences):
 
+    model = conf['MAIN']['model']['name']
+
     for seq,hsh in hashedSequences.items():
         command = 'python {:} {:} {:} {:}'.format(CREATE_MOLECULE_PATH, seq, hsh + '.coord', hsh + '.top')
         os.system(command)
+
+    if model == "MADnaFast":
+        
+        for hsh in hashedSequences.values():
+
+            top = Topology(hsh + '.coord', hsh + '.top')
+
+            for t in top.propertiesLoaded['TYPES']:
+                if t[0].split()[0] == 'P':
+                    chgProduct = float(t[0].split()[3])
+            chgProduct=chgProduct*chgProduct
+
+            nBasis = set()
+            for s in top.propertiesLoaded['STRUCTURE']:
+                nBasis.add(s[2])
+
+            nBasisPairs = len(nBasis) // 2
+
+            phosphateIndexPair = []
+
+            for struct in top.propertiesLoaded['STRUCTURE']:
+                
+                index, tp, res, chain, mol, sim = struct
+                
+                basisPairIndex = res2basePair(model,res, nBasisPairs)
+                
+                if tp == 'P':
+                    phosphateIndexPair.append([index, basisPairIndex])
+
+        with open(hsh+".top","a") as f:
+            f.write("[BONDS_DH]\n")
+
+            if "SIMULATION" in conf:
+                if "options" in conf["SIMULATION"]:
+                    if "dielectricConstant" in conf["SIMULATION"]["options"]:
+                        dielectricConstant = conf["SIMULATION"]["options"]["dielectricConstant"];
+            
+            if "SIMULATION" in conf:
+                if "options" in conf["SIMULATION"]:
+                    if "debyeLength" in conf["SIMULATION"]["options"]:
+                        debyeLength = conf["SIMULATION"]["options"]["debyeLength"];
+            
+            if "dielectricConstant" not in locals():
+                dielectricConstant =  DEFAULT_SIMULATION_OPTIONS["dielectricConstant"]
+            if "debyeLength" not in locals():
+                debyeLength =  DEFAULT_SIMULATION_OPTIONS["debyeLength"]
+
+            cutOff = DEBYE_FACTOR*debyeLength
+
+            for ph1,ph2 in itertools.combinations(phosphateIndexPair,2):
+                if(abs(ph1[1]-ph2[1])<MADNAFAST_N):
+                    
+                    f.write("{:} {:} {:} {:} {:} {:}\n".format(ph1[0],ph2[0],
+                                                               chgProduct,
+                                                               dielectricConstant,
+                                                               debyeLength,
+                                                               cutOff))
 
 def generateWLCTopologiesFromCONFAndHashedSequences(conf,hashedSequences):
 
@@ -138,42 +199,6 @@ def generateWLCTopologiesFromCONFAndHashedSequences(conf,hashedSequences):
             for i in range(seqLen):
                 f.write("{:} {:} {:} {:}\n".format(i,0.0,0.0,i*b))
  
-
-#def applyModeFromCONFToMADnaTopologiesGeneratedFromHashedSequences(conf,hashedSequences):
-#
-#    return
-#    
-#    #if 'mode' in conf['SEQUENCES']:
-#    #    
-#    #    mode = conf['SEQUENCES']['mode']
-#
-#    #    if mode.split()[0] == 'basic':
-#    #        pass
-#    #    if mode.kplit()[0] == 'fast': #(TODO)
-#
-#    #        for hsh in hashedSequences.values():
-#
-#    #            top = Topology(hsh + '.coord', hsh + '.top')
-#
-#    #            nBasis = set()
-#    #            for s in top.propertiesLoaded['STRUCTURE']:
-#    #                nBasis.add(s[2])
-#
-#    #            nBasisPairs = len(nBasis) // 2
-#
-#    #            phosphateIndexPair = []
-#
-#    #            for struct in top.propertiesLoaded['STRUCTURE']:
-#    #                
-#    #                index, tp, res, chain, mol, sim = struct
-#    #                
-#    #                basisPairIndex = res2basisPair(res, nBasisPairs)
-#    #                
-#    #                if tp == 'P':
-#    #                    phosphateIndexPair.append([index, basisPairIndex])
-#
-#    #                sys.exit(0)
-
 def applyTransformationsFromCONFToTopologiesGeneratedFromHashedSequences(conf,hashedSequences):
 
     model = conf['MAIN']['model']['name']
@@ -282,7 +307,7 @@ def applyTransformationsFromCONFToTopologiesGeneratedFromHashedSequences(conf,ha
 
                 else:
                     print('[ERROR] Transformation', trans, ' not implemented')
-                    sys.exit(0)
+                    sys.exit(1)
 
 def generateTopologyFromSimulationPoolMergingFromHashedSequences(simulationPool,hashedSequences,topologyPath):
 
@@ -291,7 +316,7 @@ def generateTopologyFromSimulationPoolMergingFromHashedSequences(simulationPool,
             print("[ERROR] There is no equivalence between"
                   " simulation pool and hashed sequences."
                   " Not found seq:",sim["seq"],"in hashed sequences")
-            sys.exit(0)
+            sys.exit(1)
     
     #if len(simulationPool) > 1:
 

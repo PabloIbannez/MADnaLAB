@@ -30,7 +30,7 @@ int2 basePair2res(int basePairPosition,
 
     int2 res;
 
-    if(model == "MADna"){
+    if(model == "MADna" or model == "MADnaFast"){
             
         if(basePairPosition > 0){
             res.x = basePairPosition-1;
@@ -52,7 +52,7 @@ int2 basePair2res(int basePairPosition,
 
     } else {
         sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
-                                          "Invalid selected model:%s",model.c_str());
+                                          "Invalid selected model: %s",model.c_str());
     }
 
     return res;
@@ -91,7 +91,7 @@ std::vector<int> basePair2id(std::shared_ptr<uammd::ParticleData> pd,
     }
 
     int2 b1;
-    if(model == "MADna"){
+    if(model == "MADna" or model == "MADnaFast"){
         b1 = basePair2res(basePairPosition,
                           nBasis, 
                           model,
@@ -103,7 +103,7 @@ std::vector<int> basePair2id(std::shared_ptr<uammd::ParticleData> pd,
                           sys);
     } else {
         sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
-                                          "Invalid selected model:%s",model.c_str());
+                                          "Invalid selected model: %s",model.c_str());
     }
 
     int b11 = b1.x;

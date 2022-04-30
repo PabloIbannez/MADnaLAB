@@ -13,9 +13,13 @@ import subprocess
 import time
 import datetime
 
-#################
+################
+
+gpuIDList = [0]
 
 MADnaLAB = os.environ['MADNALABPATH']+"/bin/MADnaLAB"
+
+#################
 
 def signalHandler(sig,frame):
     logging.info("Signal {} detected. Exiting ...".format(sig))
@@ -62,8 +66,6 @@ def runSimulationsSet(simulationsSet, gpuIDList):
 
 if __name__ == "__main__":
 
-    gpuIDList = [0]
-   
     simulationsSetFile = sys.argv[1]
 
     logging.basicConfig(filename='launchSimulations.log',
