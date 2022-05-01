@@ -35,11 +35,11 @@ int main(int argc, char** argv){
     if(in.getOption("seed",uammd::InputFile::Optional)){
         seed = std::atoi(in.getOption("seed",uammd::InputFile::Optional).str().c_str()); 
         sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
-                                         "Reading seed from input file, current seed:%lli",seed);
+                                         "Reading seed from input file, current seed:%llu",seed);
     } else {
         seed = 0xf31337Bada55D00dULL^time(NULL);
         sys->log<uammd::System::MESSAGE>("[MADnaLAB] "
-                                         "Generating seed using time, current seed:%lli",seed);
+                                         "Generating seed using time, current seed:%llu",seed);
     }
     sys->rng().setSeed(seed);
 
@@ -227,6 +227,7 @@ int main(int argc, char** argv){
         backupStep->setPBC(false);
         sim->addSimulationStep(backupStep);
 
+        backupStep->tryInit(0);
         backupStep->tryApplyStep(sim->getStep(),0,true);
     }
 
