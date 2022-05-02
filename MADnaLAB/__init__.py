@@ -2,7 +2,7 @@ import os
 
 CREATE_MOLECULE_PATH = os.getenv('UAMMDPATH') + '/extensions/structured/Tools/MADna/CreateMolecule/CreateMolecule.py'
 
-MADNAFAST_N = 2
+MADNAFAST_N = 6
 
 SEQ_COMPULSORY_INFO     = ["alias","seq","copies"]
 SIMPOOL_COMPULSORY_INFO = ["alias","seq","simId","filePath"]
