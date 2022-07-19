@@ -1,4 +1,4 @@
-ARCH=86
+ARCH=61 75 86
 CXX=g++
 
 CUDA_ROOT=/usr/local/cuda

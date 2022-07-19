@@ -3,8 +3,9 @@ import sys
 import os
 import pathlib
 
-BIN_path =  sys.argv[1]
-UAMMD_path = sys.argv[2]
+import subprocess
+
+UAMMD_path= "/home/pablo/Desktop/UAMMD"
 
 #######################################################
 
@@ -40,3 +41,12 @@ for ex in export:
     if append:
         with open(HOME_path+"/.bashrc", 'a') as f:
             f.write(ex+"\n")
+
+#######################################################
+
+subprocess.check_call([sys.executable, "-m", "pip", "install","-r","requirements.txt"])
+
+#######################################################
+
+#Compile
+subprocess.check_call(["make", "-C", "./src"])
