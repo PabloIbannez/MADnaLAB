@@ -4,7 +4,8 @@
 
 using namespace uammd::structured;
 
-using ff  = forceField::EMPTY_KCALMOL_A;
+using ff  = forceField::none<UnitsSystem::KCALMOL_A,                                                                                  
+                             Types::BASIC>;
 
 using ffMADna     = forceField::MADna;
 using ffMADnaFast = forceField::MADnaFast;
@@ -75,13 +76,13 @@ int main(int argc, char** argv){
                                          "Selected model: %s",model.c_str());
 
                if(model == "MADna"){
-            std::shared_ptr<ffMADna> madna = std::make_shared<ffMADna>(sys,pd,pg,in);
+            std::shared_ptr<ffMADna> madna = std::make_shared<ffMADna>(pg,in);
             sim->addInteractor(madna);
         } else if(model == "MADnaFast"){
-            std::shared_ptr<ffMADnaFast> madnafast = std::make_shared<ffMADnaFast>(sys,pd,pg,in);
+            std::shared_ptr<ffMADnaFast> madnafast = std::make_shared<ffMADnaFast>(pg,in);
             sim->addInteractor(madnafast);
         } else if(model == "WLC"){
-            std::shared_ptr<ffWLC> wlc = std::make_shared<ffWLC>(sys,pd,pg,in);
+            std::shared_ptr<ffWLC> wlc = std::make_shared<ffWLC>(pg,in);
             sim->addInteractor(wlc);
         } else {
             sys->log<uammd::System::CRITICAL>("[MADnaLAB] "
@@ -105,7 +106,6 @@ int main(int argc, char** argv){
 
             auto pgs = std::make_shared<uammd::ParticleGroup>(selector,
                                                               pd,
-                                                              sys,
                                                               "simId_"+std::to_string(s));
             simGroups[s]=pgs;
             
@@ -194,9 +194,7 @@ int main(int argc, char** argv){
             }
 
             param.append = loadFromBackup;
-            std::shared_ptr<WriteStep<ff::Units>> wStep = std::make_shared<WriteStep<ff::Units>>(sys,
-                                                                                                 pd,
-                                                                                                 pg.second,
+            std::shared_ptr<WriteStep<ff::Units>> wStep = std::make_shared<WriteStep<ff::Units>>(pg.second,
                                                                                                  interval,
                                                                                                  param);
 
@@ -218,9 +216,7 @@ int main(int argc, char** argv){
         
         param.outPutFilePath = simulationSetFolder+"/backup";
         
-        backupStep = std::make_shared<WriteStep<ff::Units>>(sys,
-                                                            pd,
-                                                            pg,
+        backupStep = std::make_shared<WriteStep<ff::Units>>(pg,
                                                             interval,
                                                             param);
 
@@ -304,7 +300,7 @@ int main(int argc, char** argv){
             }
             
             std::shared_ptr<Interactor::Sets::ConstantForceBtwCOM> externalForceBtwCOMInteractor
-            = std::make_shared<Interactor::Sets::ConstantForceBtwCOM>(sys,pd,pg,
+            = std::make_shared<Interactor::Sets::ConstantForceBtwCOM>(pg,
                                                                       sI1.setSize,sI2.setSize,
                                                                       nSets,
                                                                       sI1.set2id,sI2.set2id,
@@ -391,7 +387,7 @@ int main(int argc, char** argv){
             }
             
             std::shared_ptr<Interactor::Sets::ConstantTorqueBtwCOM> externalTorqueBtwCOMInteractor
-            = std::make_shared<Interactor::Sets::ConstantTorqueBtwCOM>(sys,pd,pg,
+            = std::make_shared<Interactor::Sets::ConstantTorqueBtwCOM>(pg,
                                                                        sI1.setSize,sI2.setSize,
                                                                        nSets,
                                                                        sI1.set2id,sI2.set2id,
@@ -474,7 +470,7 @@ int main(int argc, char** argv){
             }
             
             std::shared_ptr<Interactor::Sets::ExternalForceOverCOM> externalForceInteractor
-            = std::make_shared<Interactor::Sets::ExternalForceOverCOM>(sys,pd,pg,
+            = std::make_shared<Interactor::Sets::ExternalForceOverCOM>(pg,
                                                                        sI.setSize,
                                                                        nSets,
                                                                        sI.set2id,
@@ -557,7 +553,7 @@ int main(int argc, char** argv){
             }
             
             std::shared_ptr<Interactor::Sets::ExternalTorqueOverCOM> externalTorqueInteractor
-            = std::make_shared<Interactor::Sets::ExternalTorqueOverCOM>(sys,pd,pg,
+            = std::make_shared<Interactor::Sets::ExternalTorqueOverCOM>(pg,
                                                                         sI.setSize,
                                                                         nSets,
                                                                         sI.set2id,
@@ -646,7 +642,7 @@ int main(int argc, char** argv){
             }
 
             std::shared_ptr<Interactor::Sets::HarmonicBondBtwCOM> constraintsDistanceBtwCOMInteractor
-            = std::make_shared<Interactor::Sets::HarmonicBondBtwCOM>(sys,pd,pg,
+            = std::make_shared<Interactor::Sets::HarmonicBondBtwCOM>(pg,
                                                                       sI1.setSize,sI2.setSize,
                                                                       nSets,
                                                                       sI1.set2id,sI2.set2id,
@@ -733,7 +729,7 @@ int main(int argc, char** argv){
             }
 
             std::shared_ptr<Interactor::Sets::HarmonicFixedCOM> constraintsPositionOfCOMInteractor 
-            = std::make_shared<Interactor::Sets::HarmonicFixedCOM>(sys,pd,pg,
+            = std::make_shared<Interactor::Sets::HarmonicFixedCOM>(pg,
                                                                        sI.setSize,
                                                                        nSets,
                                                                        sI.set2id,
@@ -868,7 +864,7 @@ int main(int argc, char** argv){
 
         }
 
-        std::shared_ptr<InteractorHarmonicFixed> constraintsPositionOfBeadsInteractor = std::make_shared<InteractorHarmonicFixed>(sys, pd, pg,
+        std::shared_ptr<InteractorHarmonicFixed> constraintsPositionOfBeadsInteractor = std::make_shared<InteractorHarmonicFixed>(pg,
                                                                                                                                   fixedVector, fb,
                                                                                                                                   interactorFixedParameters);
         
@@ -911,9 +907,7 @@ int main(int argc, char** argv){
         
         par.compressionVelocity = compressionVelocity/ff::Units::TO_INTERNAL_TIME;
         
-        boundaryZPlatesInteractor = std::make_shared<CompressiblePlates>(sys,
-                                                                         pd,
-                                                                         pg,
+        boundaryZPlatesInteractor = std::make_shared<CompressiblePlates>(pg,
                                                                          par);
         
         sim->addInteractor(boundaryZPlatesInteractor);
@@ -983,9 +977,7 @@ int main(int argc, char** argv){
             }
         }
 
-        std::shared_ptr<MeasuresList<SIM>> mStep = std::make_shared<MeasuresList<SIM>>(sys,
-                                                                                       pd,
-                                                                                       pg,
+        std::shared_ptr<MeasuresList<SIM>> mStep = std::make_shared<MeasuresList<SIM>>(pg,
                                                                                        nStepsMeasure,
                                                                                        simGroups,simId2folder,
                                                                                        measuresList,

@@ -12,3 +12,5 @@ rm MADnaTestSimulationSets.dat
 
 rm -r Simulations
 rm simulationPool.json 
+
+rm launchSimulations.log

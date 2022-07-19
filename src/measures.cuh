@@ -19,15 +19,13 @@ class MeasuresList: public SimulationStep{
 
     public:
         
-        MeasuresList(std::shared_ptr<uammd::System>       sys,
-                     std::shared_ptr<uammd::ParticleData>  pd,
-                     std::shared_ptr<uammd::ParticleGroup> pg,
+        MeasuresList(std::shared_ptr<uammd::ParticleGroup> pg,
                      int interval,
                      std::map<int,std::shared_ptr<uammd::ParticleGroup>>& simGroups,
                      std::map<int,std::string> simId2folder,
                      std::vector<std::string> measuresList,
                      std::shared_ptr<SimulationType> sim,
-                     bool append):SimulationStep(sys,pd,pg,"Measures",interval),
+                     bool append):SimulationStep(pg,"Measures",interval),
                                                  simGroups(simGroups),
                                                  simId2folder(simId2folder),
                                                  measuresList(measuresList),
@@ -108,9 +106,7 @@ class MeasuresList: public SimulationStep{
 
                 for(std::string m : measuresList){
                     if        (m == "temperature"){
-                        uammd::real kE = Measures::totalKineticEnergy(this->sys,
-                                                                      this->pd,
-                                                                      pgs.second,st);
+                        uammd::real kE = Measures::totalKineticEnergy(pgs.second,st);
                         
                         int N = pgs.second->getNumberParticles();
                         uammd::real T = uammd::real(2.0/(3.0*N*SimulationType::ForceField::Units::KBOLTZ))*kE;
@@ -129,9 +125,7 @@ class MeasuresList: public SimulationStep{
 
                             sim->getForceField()->sum(pot,comp,st);
 
-                            uammd::real E = Measures::totalPotentialEnergy(this->sys,
-                                                                           this->pd,
-                                                                           pgs.second,st);
+                            uammd::real E = Measures::totalPotentialEnergy(pgs.second,st);
 
                             measuresFiles[s] << E << " ";
                         }
@@ -147,9 +141,7 @@ class MeasuresList: public SimulationStep{
 
                             inter->sum(comp,st);
 
-                            uammd::real E = Measures::totalPotentialEnergy(this->sys,
-                                                                           this->pd,
-                                                                           pgs.second,st);
+                            uammd::real E = Measures::totalPotentialEnergy(pgs.second,st);
 
                             measuresFiles[s] << E << " ";
                         }

@@ -16,7 +16,7 @@ import datetime
 
 ################
 
-gpuIDList = [0,1]
+gpuIDList = [0]
 
 MADnaLAB = os.environ['MADNALABPATH']+"/bin/MADnaLAB"
 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     for i in out:
         if(i.returncode!=0):
-            loggin.error("Something went wrong for simulation: {}".format(i))
+            logging.error("Something went wrong for simulation: {}".format(i))
     
     logging.info("End")
 

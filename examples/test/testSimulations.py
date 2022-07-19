@@ -41,7 +41,7 @@ for seq in sequences.keys():
             simId+=1
 
 with open("simulationPool.json", "w") as f:
-    json.dump(simulationPool,f)
+    json.dump(simulationPool,f,indent=4)
 
 simulationPoolList = splitSimulationPoolAccordingToEntry(simulationPool,"alias")
 

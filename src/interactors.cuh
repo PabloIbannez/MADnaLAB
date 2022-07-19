@@ -23,13 +23,11 @@ class CompressiblePlates: public Interactor::Plates{
         
         };
 
-        CompressiblePlates(std::shared_ptr<uammd::System>       sys,
-                           std::shared_ptr<uammd::ParticleData>  pd,
-                           std::shared_ptr<uammd::ParticleGroup> pg,
+        CompressiblePlates(std::shared_ptr<uammd::ParticleGroup> pg,
                            Parameters par):initialPlatesSeparation(par.initialPlatesSeparation),
                                            endPlatesSeparation(par.endPlatesSeparation),
                                            compressionVelocity(par.compressionVelocity),
-                                           Plates(sys,pd,pg,par){
+                                           Plates(pg,par){
             
             this->setTopPlatePosition(initialPlatesSeparation/2.0);
             this->setBottomPlatePosition(-initialPlatesSeparation/2.0);

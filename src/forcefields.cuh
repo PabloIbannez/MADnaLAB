@@ -29,10 +29,8 @@ namespace WormLikeChain{
         
         public:
 
-            WormLikeChain(std::shared_ptr<System>        sys,
-                          std::shared_ptr<ParticleData>  pd,
-                          std::shared_ptr<ParticleGroup> pg,
-                          InputFile&                     in):Base(sys,pd,pg,in){
+            WormLikeChain(std::shared_ptr<ParticleGroup> pg,
+                          InputFile&                     in):Base(pg,in){
                 
                 //Add bonds
                 BondType::Parameters bondParameters;
@@ -44,7 +42,7 @@ namespace WormLikeChain{
                 
                 interactorBondParameters.bondName = "BONDS";
 
-                bonds = std::make_shared<InteractorBondType>(this->sys, this->pd, this->pg,
+                bonds = std::make_shared<InteractorBondType>(this->pg,
                                                              this->top, bH_PBC,
                                                              interactorBondParameters);
 
@@ -58,7 +56,7 @@ namespace WormLikeChain{
                 
                 interactorAngleParameters.bondName = "ANGLES";
 
-                angles = std::make_shared<InteractorAngleType>(this->sys, this->pd, this->pg,
+                angles = std::make_shared<InteractorAngleType>(this->pg,
                                                                this->top, aKP_PBC,
                                                                interactorAngleParameters);
             }
@@ -119,20 +117,18 @@ namespace MechanicallyAccurateDNA{
             
         public:
         
-            MechanicallyAccurateDNABonded(std::shared_ptr<System>        sys,
-                                          std::shared_ptr<ParticleData>  pd,
-                                          std::shared_ptr<ParticleGroup> pg,
-                                          InputFile&                     in):Base(sys,pd,pg,in){
+            MechanicallyAccurateDNABonded(std::shared_ptr<ParticleGroup> pg,
+                                          InputFile&                     in):Base(pg,in){
 
                 Base::name = "MechanicallyAccurateDNABonded";
                 
                 if(!std::is_same<typename Base::Units,
                                  UnitsSystem::KCALMOL_A>::value){
-                    sys->log<System::CRITICAL>("[%s] Mechanically Accurate DNA force field is parametrized in the %s units system,"
-                                               "but %s units system is provied",
-                                                Base::name.c_str(),
-                                                UnitsSystem::KCALMOL_A::NAME.c_str(),
-                                                Base::Units::NAME.c_str());
+                    this->sys->template log<System::CRITICAL>("[%s] Mechanically Accurate DNA force field is parametrized in the %s units system,"
+                                                              "but %s units system is provied",
+                                                               Base::name.c_str(),
+                                                               UnitsSystem::KCALMOL_A::NAME.c_str(),
+                                                               Base::Units::NAME.c_str());
                 }
 
                 //Add bonds
@@ -145,7 +141,7 @@ namespace MechanicallyAccurateDNA{
                 
                 interactorBondParameters.bondName = "BONDS";
 
-                bonds = std::make_shared<InteractorBondType>(this->sys, this->pd, this->pg,
+                bonds = std::make_shared<InteractorBondType>(this->pg,
                                                              this->top, b_PBC,
                                                              interactorBondParameters);
                 
@@ -159,7 +155,7 @@ namespace MechanicallyAccurateDNA{
                 
                 interactorAngleParameters.bondName = "ANGLES";
 
-                angles = std::make_shared<InteractorAngleType>(this->sys, this->pd, this->pg,
+                angles = std::make_shared<InteractorAngleType>(this->pg,
                                                                this->top, a_PBC,
                                                                interactorAngleParameters);
                 
@@ -173,7 +169,7 @@ namespace MechanicallyAccurateDNA{
                 
                 interactorDihedralParameters.bondName = "DIHEDRALS";
 
-                dihedrals = std::make_shared<InteractorDihedralType>(this->sys, this->pd, this->pg,
+                dihedrals = std::make_shared<InteractorDihedralType>(this->pg,
                                                                      this->top, d_PBC,
                                                                      interactorDihedralParameters);
             }
@@ -221,10 +217,8 @@ namespace MechanicallyAccurateDNA{
         
         protected:
 
-            const real epsilon = 1.0;
-            
-            using DHType    = Potentials::UnBound::DebyeHuckel<typename Base::Units>;
-            using WCAType  = Potentials::UnBound::WCA;
+            using DHType   = Potentials::UnBound::DebyeHuckel<typename Base::Topology>;
+            using WCAType  = Potentials::UnBound::WCAType2<typename Base::Topology>;
             
             using InteractorDHType   = Interactor::PairInteractor<DHType,typename Base::NeighbourList>;
             using InteractorWCAType = Interactor::PairInteractor<WCAType,typename Base::NeighbourList>;
@@ -243,10 +237,8 @@ namespace MechanicallyAccurateDNA{
 
         public:
         
-            MechanicallyAccurateDNA(std::shared_ptr<System>        sys,
-                                    std::shared_ptr<ParticleData>  pd,
-                                    std::shared_ptr<ParticleGroup> pg,
-                                    InputFile&                     in):Base(sys,pd,pg,in),
+            MechanicallyAccurateDNA(std::shared_ptr<ParticleGroup> pg,
+                                    InputFile&                     in):Base(pg,in),
                                                                        cutOffDstDH(std::stof(in.getOption("cutOffDstDH",InputFile::Required).str())),
                                                                        cutOffDstWCA(std::stof(in.getOption("cutOffDstWCA",InputFile::Required).str())),
                                                                        dielectricConstant(std::stof(in.getOption("dielectricConstant",InputFile::Required).str())),
@@ -258,17 +250,17 @@ namespace MechanicallyAccurateDNA{
                 Base::componentsList.push_back("wca");
 
                 if(cutOffDstDH >= this->nl->getCutOffVerlet()){
-                    sys->log<System::CRITICAL>("[%s] cutOffDstDH (%f) "
-                                                 "has to be smaller than VerletListDst (%f)",
-                                                 Base::name.c_str(),
-                                                 cutOffDstDH,this->nl->getCutOffVerlet());
+                    this->sys->template log<System::CRITICAL>("[%s] cutOffDstDH (%f) "
+                                                              "has to be smaller than VerletListDst (%f)",
+                                                              Base::name.c_str(),
+                                                              cutOffDstDH,this->nl->getCutOffVerlet());
                 }
                 
                 if(cutOffDstWCA >= this->nl->getCutOffVerlet()){
-                    sys->log<System::CRITICAL>("[%s] cutOffDstWCA (%f) "
-                                                 "has to be smaller than VerletListDst (%f)",
-                                                 Base::name.c_str(),
-                                                 cutOffDstWCA,this->nl->getCutOffVerlet());
+                    this->sys->template log<System::CRITICAL>("[%s] cutOffDstWCA (%f) "
+                                                              "has to be smaller than VerletListDst (%f)",
+                                                              Base::name.c_str(),
+                                                              cutOffDstWCA,this->nl->getCutOffVerlet());
                 }
                 
                 this->sys->template log<System::MESSAGE>("[%s] "
@@ -294,9 +286,9 @@ namespace MechanicallyAccurateDNA{
                 dhPotentialParam.dielectricConstant = dielectricConstant;
                 dhPotentialParam.debyeLength        = debyeLength;
                 
-                dhPotentialParam.cutOff = cutOffDstDH;
+                dhPotentialParam.cutOffDst = cutOffDstDH;
                 
-                std::shared_ptr<DHType> potDH = std::make_shared<DHType>(this->pd,dhPotentialParam);
+                std::shared_ptr<DHType> potDH = std::make_shared<DHType>(this->pg,this->top,dhPotentialParam);
 
                 typename InteractorDHType::Parameters interactorDHParameters;
 
@@ -305,17 +297,17 @@ namespace MechanicallyAccurateDNA{
                 interactorDHParameters.nl   = this->nl;
                 interactorDHParameters.conditionInteractionName = "charged";
 
-                dh = std::make_shared<InteractorDHType>(this->sys,this->pd,this->pg,
+                dh = std::make_shared<InteractorDHType>(this->pg,
                                                         interactorDHParameters);
                 
                 //Add wca
                 typename WCAType::Parameters wcaPotentialParam;
                 
-                wcaPotentialParam.epsilon = epsilon;
+                wcaPotentialParam.label = "WCA";
                 
-                wcaPotentialParam.cutOff = cutOffDstWCA;
+                wcaPotentialParam.cutOffDst = cutOffDstWCA;
                 
-                std::shared_ptr<WCAType> potWCA = std::make_shared<WCAType>(this->pd,wcaPotentialParam);
+                std::shared_ptr<WCAType> potWCA = std::make_shared<WCAType>(this->pg,this->top,wcaPotentialParam);
 
                 typename InteractorWCAType::Parameters interactorWCAParameters;
 
@@ -324,7 +316,7 @@ namespace MechanicallyAccurateDNA{
                 interactorWCAParameters.nl   = this->nl;
                 interactorWCAParameters.conditionInteractionName = "nonExcluded";
 
-                wca = std::make_shared<InteractorWCAType>(this->sys,this->pd,this->pg,
+                wca = std::make_shared<InteractorWCAType>(this->pg,
                                                           interactorWCAParameters);
             }
 
@@ -367,8 +359,6 @@ namespace MechanicallyAccurateDNA{
         
         protected:
 
-            const real epsilon = 1.0;
-            
             using BondDHType = Potentials::Bond2::DebyeHuckel<typename Base::Units>;
             
             using InteractorBondDHType   = Interactor::BondedInteractor<BondDHType,
@@ -381,10 +371,8 @@ namespace MechanicallyAccurateDNA{
 
         public:
         
-            MechanicallyAccurateDNAFast(std::shared_ptr<System>        sys,
-                                        std::shared_ptr<ParticleData>  pd,
-                                        std::shared_ptr<ParticleGroup> pg,
-                                        InputFile&                     in):Base(sys,pd,pg,in){
+            MechanicallyAccurateDNAFast(std::shared_ptr<ParticleGroup> pg,
+                                        InputFile&                     in):Base(pg,in){
                 
                 Base::name = "MechanicallyAccurateDNAFast";
 
@@ -400,7 +388,7 @@ namespace MechanicallyAccurateDNA{
                 
                 interactorBondParameters.bondName = "BONDS_DH";
 
-                bonds_dh = std::make_shared<InteractorBondDHType>(this->sys, this->pd, this->pg,
+                bonds_dh = std::make_shared<InteractorBondDHType>(this->pg,
                                                                   this->top, bdh_PBC,
                                                                   interactorBondParameters);
             }
