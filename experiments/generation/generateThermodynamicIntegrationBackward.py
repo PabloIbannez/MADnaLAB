@@ -9,7 +9,7 @@ from numpy import random
 
 ps2AKMA = picosecond2KcalMol_A_time()
 
-outputName = "THERMODYNAMIC_INTEGRATION"
+outputName = "THERMODYNAMIC_INTEGRATION_BACKWARD"
 
 #Check if the output directory exists
 if os.path.isdir(outputName):
@@ -18,17 +18,17 @@ if os.path.isdir(outputName):
 
 #Get file current directory
 currentDirectory   = os.path.dirname(os.path.realpath(__file__))
-nucleosomeFilePath = os.path.join(currentDirectory, './data/nucleosome.dat')
+constraintFilePath = os.path.join(currentDirectory, './data/superHelix.dat')
 
-#Load nucleosome
-nucleosomeIds = []
-nucleosomePos = []
-with open(nucleosomeFilePath, 'r') as f:
+#Load constraint
+constraintIds = []
+constraintPos = []
+with open(constraintFilePath, 'r') as f:
     for line in f:
         i,x,y,z = [float(x) for x in line.split()]
         i = int(i)
-        nucleosomeIds.append(i)
-        nucleosomePos.append([x,y,z])
+        constraintIds.append(i)
+        constraintPos.append([x,y,z])
 
 dt       = 0.02
 friction = 0.2
@@ -36,7 +36,7 @@ friction = 0.2
 infoTime       = 1000.0
 measureTime    = 1000.0
 writeTime      = 1000.0
-backupTime     = 10000.0
+backupTime     = 1000.0
 
 debyeLength    = 7.874
 
@@ -51,20 +51,20 @@ sequences.append(seq)
 #################################################
 
 #Constraint K
-K = 20.0
+K = 1.0 # Constraint potential is 0.5*lambda**2*K*(x-x0)^2+0.5*lambda**2*K*(y-y0)^2+0.5*lambda**2*K*(z-z0)^2
 
 #Lambda
-intervalLambda = 1000
-stepLambda     = 10000
+intervalLambda = 1000  # This is the interval dU/dlambda is computed, STEPS !!!!
+stepLambda     = 20000 # STEPS!!!!!
 
-lambdaIntervalLen = 10
+lambdaValues = [0.0,0.001,0.002,0.005,0.008,0.01,0.02,0.03,0.04,0.05,0.06,0.08,0.1,0.15,0.2,0.3,0.4,0.5,1.0]
 
 #################################################
 
 dt       = dt*ps2AKMA
 friction = friction/ps2AKMA
 
-simulationSteps = lambdaIntervalLen*stepLambda
+simulationSteps = len(lambdaValues)*stepLambda
 infoSteps       = int(infoTime/dt)
 measureSteps    = int(measureTime/dt)
 writeSteps      = int(writeTime/dt)
@@ -83,16 +83,18 @@ for seq in sequences:
                                      {"type":"backup","parameters":{"backupIntervalStep":backupSteps}}],
                            "units":[{"type":"KcalMol_A"}],
                            "types":[{"type":"basic"}],
-                           "ensemble":[{"type":"NVTlambda","parameters":{"box":[10000.0,10000.0,10000.0],"temperature":300.0,"lambda":1.0}}],
+                           "ensemble":[{"type":"NVTlambda","parameters":{"box":[10000.0,10000.0,10000.0],"temperature":300.0,"lambda":lambdaValues[0]}}],
                            "integrators":[{"type":"BBK","parameters":{"timeStep":dt,"frictionConstant":friction,"integrationSteps":simulationSteps}}],
                            "models":[{"type":"MADna",
                                       "parameters":{"sequence":seq,
                                                     "debyeLength":debyeLength}
                                       }],
-                           "modelOperations":[{"type":"setParticlePositions","parameters":{"positions":nucleosomePos,"ids":nucleosomeIds}}],
-                           "modelExtensions":[{"type":"constraintParticlesPositionLambda",
+                           "modelExtensions":[{"type":"constraintParticlesListPositionLambda",
                                                "parameters":{"K":K,
-                                                             "selection":{}}}],
+                                                             "ids":constraintIds,
+                                                             "positions":constraintPos,
+                                                            }
+                                              }],
                            "simulationSteps":[{"type":"saveState","parameters":{"intervalStep":writeSteps,
                                                                                 "outputFilePath":"output",
                                                                                 "outputFormat":"sp"}},
@@ -101,7 +103,7 @@ for seq in sequences:
                                               {"type":"thermodynamicIntegration","parameters":{"intervalStep":intervalLambda,
                                                                                                "outputFilePath":"ti.dat",
                                                                                                "stepLambda":stepLambda,
-                                                                                               "lambdaIntervalLength":lambdaIntervalLen}},
+                                                                                               "lambdaValues":lambdaValues}},
                                               {"type":"info","parameters":{"intervalStep":infoSteps}}]
 
                            })
