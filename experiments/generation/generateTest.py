@@ -10,19 +10,21 @@ dt       = 0.02
 friction = 0.2
 
 simulationTime = 200000.0
-infoTime       = 10000.0
+infoTime       = 100.0
 writeTime      = 10000.0
 backupTime     = 10000.0
 
-sequences = {"AA":["CGCGAAAAAAAAAACGCG",10.8748],
-             "AC":["CGCGACACACACACCGCG",10.9725],
-             "AG":["CGCGAGAGAGAGAGCGCG",10.7969],
-             "AT":["CGCGATATATATATCGCG",10.8929],
-             "CG":["CGCGCGCGCGCGCGCGCG",10.8929],
-             "GG":["CGCGGGGGGGGGGGCGCG",10.8748]}
+#sequences = {"AA":["CGCGAAAAAAAAAACGCG",10.8748],
+#             "AC":["CGCGACACACACACCGCG",10.9725],
+#             "AG":["CGCGAGAGAGAGAGCGCG",10.7969],
+#             "AT":["CGCGATATATATATCGCG",10.8929],
+#             "CG":["CGCGCGCGCGCGCGCGCG",10.8929],
+#             "GG":["CGCGGGGGGGGGGGCGCG",10.8748]}
 
-forces = [1.0,5.0,10.0,15.0,20.0]
-nSimPerSeq = 100
+sequences = {"TESIS":["CGCGAATTCGCG",10.8748]}
+
+forces = [1.0]
+nSimPerSeq = 10
 
 #################################################
 
@@ -33,6 +35,9 @@ simulationSteps = int(simulationTime/dt)
 infoSteps       = int(infoTime/dt)
 writeSteps      = int(writeTime/dt)
 backupSteps     = int(backupTime/dt)
+
+print(simulationSteps,infoSteps,writeSteps,backupSteps)
+input()
 
 print("Simulation steps: %d" % simulationSteps)
 print("Info steps: %d" % infoSteps)
@@ -56,7 +61,7 @@ for seqAlias in sequences.keys():
                                    "units":[{"type":"KcalMol_A"}],
                                    "types":[{"type":"basic"}],
                                    "ensemble":[{"type":"NVT","parameters":{"box":[10000.0,10000.0,10000.0],"temperature":300.0}}],
-                                   "integrators":[{"type":"BBK","parameters":{"timeStep":dt,"frictionConstant":friction,"integrationSteps":simulationSteps}}],
+                                   "integrators":[{"type":"GFJ","parameters":{"timeStep":dt,"frictionConstant":friction,"integrationSteps":simulationSteps}}],
                                    "models":[{"type":"MADna",
                                               "parameters":{"sequence":seq,
                                                             "debyeLength":debyeLength}
@@ -67,7 +72,7 @@ for seqAlias in sequences.keys():
                                                                      "selection2":{"expression":{"basePairIndex":-2}}}}],
                                    "simulationSteps":[{"type":"saveState","parameters":{"intervalStep":writeSteps,
                                                                                         "outputFilePath":"output",
-                                                                                        "outputFormat":"lammpstrj"}},
+                                                                                        "outputFormat":"dcd"}},
                                                       {"type":"thermodynamicMeasurement","parameters":{"intervalStep":infoSteps,
                                                                                          "outputFilePath":"thermo.dat"}},
                                                       {"type":"info","parameters":{"intervalStep":infoSteps}}]
@@ -78,6 +83,7 @@ for seqAlias in sequences.keys():
 vlmp = VLMP.VLMP()
 
 vlmp.loadSimulationPool(simulationPool)
-vlmp.distributeSimulationPool("size", nSimPerSeq)
+#vlmp.distributeSimulationPool("size", nSimPerSeq)
+vlmp.distributeSimulationPool("property", ["topology","forceField","DH","parameters","debyeLength"])
 vlmp.setUpSimulation("MADNA_TEST")
 

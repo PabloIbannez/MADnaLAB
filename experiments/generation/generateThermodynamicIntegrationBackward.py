@@ -51,20 +51,20 @@ sequences.append(seq)
 #################################################
 
 #Constraint K
-K = 1.0 # Constraint potential is 0.5*lambda**2*K*(x-x0)^2+0.5*lambda**2*K*(y-y0)^2+0.5*lambda**2*K*(z-z0)^2
+K = 100.0 # Constraint potential is 0.5*lambda**2*K*(x-x0)^2+0.5*lambda**2*K*(y-y0)^2+0.5*lambda**2*K*(z-z0)^2
 
 #Lambda
 intervalLambda = 1000  # This is the interval dU/dlambda is computed, STEPS !!!!
 stepLambda     = 20000 # STEPS!!!!!
 
-lambdaValues = [0.0,0.001,0.002,0.005,0.008,0.01,0.02,0.03,0.04,0.05,0.06,0.08,0.1,0.15,0.2,0.3,0.4,0.5,1.0]
+lambdaValues = [0.0,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
 
 #################################################
 
 dt       = dt*ps2AKMA
 friction = friction/ps2AKMA
 
-simulationSteps = len(lambdaValues)*stepLambda
+simulationSteps = len(lambdaValues)*stepLambda+100000000
 infoSteps       = int(infoTime/dt)
 measureSteps    = int(measureTime/dt)
 writeSteps      = int(writeTime/dt)
