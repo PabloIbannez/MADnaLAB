@@ -66,7 +66,8 @@ for seq in sequences:
                                                                           "frictionConstant":friction,
                                                                           "integrationSteps":simulationSteps}}],
                                "models":[{"type":"MADna",
-                                          "parameters":{"sequence":seq}
+                                          "parameters":{"sequence":seq,
+                                                        "debyeLength":7.8511}
                                           }],
                                "modelOperations":[{"type":"setCenterOfMassPosition","parameters":{"position":[0.0,0.0,0.0],
                                                                                                   "selection":{}}}],

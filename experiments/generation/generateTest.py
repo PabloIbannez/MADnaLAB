@@ -14,14 +14,12 @@ infoTime       = 100.0
 writeTime      = 10000.0
 backupTime     = 10000.0
 
-#sequences = {"AA":["CGCGAAAAAAAAAACGCG",10.8748],
-#             "AC":["CGCGACACACACACCGCG",10.9725],
-#             "AG":["CGCGAGAGAGAGAGCGCG",10.7969],
-#             "AT":["CGCGATATATATATCGCG",10.8929],
-#             "CG":["CGCGCGCGCGCGCGCGCG",10.8929],
-#             "GG":["CGCGGGGGGGGGGGCGCG",10.8748]}
-
-sequences = {"TESIS":["CGCGAATTCGCG",10.8748]}
+sequences = {"AA":["CGCGAAAAAAAAAACGCG",10.8748],
+             "AC":["CGCGACACACACACCGCG",10.9725],
+             "AG":["CGCGAGAGAGAGAGCGCG",10.7969],
+             "AT":["CGCGATATATATATCGCG",10.8929],
+             "CG":["CGCGCGCGCGCGCGCGCG",10.8929],
+             "GG":["CGCGGGGGGGGGGGCGCG",10.8748]}
 
 forces = [1.0]
 nSimPerSeq = 10
