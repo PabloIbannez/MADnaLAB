@@ -10,7 +10,7 @@ from numpy import random
 
 ps2AKMA = picosecond2KcalMol_A_time()
 
-name = "HELIX_BOUNDARIES_RIGHT"
+name = "HELIX_BOUNDARIES_LEFT_RANDOM"
 #Check if folder name exists
 if os.path.exists(name):
     print("Folder %s already exists" % name)
@@ -41,10 +41,10 @@ for simS in sequences_data["simulationSets"]:
     if len(simS[3]) != 1:
         print("Only one sequence per simulation set is allowed")
         sys.exit(1)
-    seqName  = simS[3][0].split("_")[0]
+    seqName  = "".join(simS[3][0].split("_")[:-1])
     filepath = folderName + "/" + simS[1]+"/backupEnd.json"
+    #print(seqName,filepath)
     sequences[seqName] = filepath
-    print(seqName,filepath)
 
 #################################################
 
@@ -52,7 +52,7 @@ helixPitch       = 26.0
 helixRadius      = 42.0
 helixInnerRadius = 12.0
 
-eps    =  1.0
+eps    =  -1.0
 nTurns =  20
 
 K = 1.0

@@ -9,7 +9,7 @@ from numpy import random
 
 ps2AKMA = picosecond2KcalMol_A_time()
 
-name = "FREE"
+name = "FREE_RANDOM"
 #Check if folder name exists
 if os.path.exists(name):
     print("Folder %s already exists" % name)
@@ -28,7 +28,8 @@ writeTime      = 100000.0
 measureTime    = 1000.0
 backupTime     = 10000.0
 
-with open("./generation/data/sequences.json") as f:
+with open("./generation/data/randomSeq.json") as f:
+#with open("./generation/data/sequences.json") as f:
     sequences_data = json.load(f)
 
 sequences = {}
@@ -81,6 +82,8 @@ for seqAlias in sequences.keys():
                                                                                     "outputFormat":"sp"}},
                                                   {"type":"thermodynamicMeasurement","parameters":{"intervalStep":measureSteps,
                                                                                      "outputFilePath":"thermo.dat"}},
+                                                  {"type":"potentialEnergyMeasurement","parameters":{"intervalStep":measureSteps,
+                                                                                                     "outputFilePath":"energy.dat"}},
                                                   {"type":"info","parameters":{"intervalStep":infoSteps}}]
 
                                })

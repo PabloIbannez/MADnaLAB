@@ -45,7 +45,8 @@ writeTime      = 10000.0
 measureTime    = 10000.0
 backupTime     = 10000.0
 
-with open("./generation/data/sequences.json") as f:
+#with open("./generation/data/sequences.json") as f:
+with open("./generation/data/randomSeq.json") as f:
     sequences_data = json.load(f)
 
 sequences = {}
@@ -63,7 +64,7 @@ helixPitch       = 26.0
 helixRadius      = 42.0
 helixInnerRadius = 12.0
 
-eps    = -1.0
+eps    =  1.0
 nTurns =  125
 
 ################
